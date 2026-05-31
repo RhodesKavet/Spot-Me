@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpotMe — Your Fitness Community</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#181818;--bg4:#222222;
+  --border:#2a2a2a;--border2:#333333;
+  --text:#e8e8e8;--text2:#888888;--text3:#555555;
+  --red:#c0392b;--red2:#e74c3c;--red3:#1a0505;--red4:#2d0808;
+  --redborder:rgba(192,57,43,0.35);
+  --font-head:'Barlow Condensed',sans-serif;--font:'Barlow',sans-serif;
+  --r:8px;--r2:12px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:var(--font);color:var(--text);font-size:15px;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:0}
+.auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:380px;max-width:90vw}
+.auth-logo{font-family:var(--font-head);font-size:40px;font-weight:800;letter-spacing:2px;text-align:center;margin-bottom:6px}
+.auth-logo span{color:var(--red2)}
+.auth-tagline{text-align:center;font-size:13px;color:var(--text3);margin-bottom:28px}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg3);border-radius:var(--r);padding:3px}
+.auth-tab{flex:1;background:none;border:none;color:var(--text3);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;padding:7px;border-radius:6px;transition:.18s}
+.auth-tab.on{background:var(--red);color:#fff}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:.18s}
+.auth-input:focus{border-color:var(--redborder)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:11px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--font);transition:.18s;margin-top:6px;letter-spacing:.3px}
+.auth-btn:hover{background:var(--red2)}
+.auth-err{font-size:12px;color:var(--red2);text-align:center;margin-top:10px;min-height:18px}
+
+/* ── NAV ── */
+nav{display:flex;align-items:center;gap:4px;padding:0 24px;height:54px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:200}
+.logo{font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:2px;color:var(--text);margin-right:auto;cursor:pointer}
+.logo span{color:var(--red2)}
+.nav-btn{background:none;border:none;color:var(--text3);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;padding:6px 14px;border-radius:6px;transition:.18s;display:flex;align-items:center;gap:5px}
+.nav-btn i{font-size:16px}
+.nav-btn:hover{color:var(--text2);background:var(--bg3)}
+.nav-btn.active{color:var(--red2);background:var(--red3);border:1px solid var(--redborder)}
+.nav-av{width:32px;height:32px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;cursor:pointer;flex-shrink:0;margin-left:8px;border:1px solid var(--redborder);position:relative}
+.nav-av-menu{position:absolute;top:42px;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:8px;min-width:160px;display:none;z-index:300}
+.nav-av-menu.show{display:block}
+.nav-av-menu button{width:100%;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;padding:7px 10px;border-radius:6px;text-align:left;transition:.18s;display:flex;align-items:center;gap:7px}
+.nav-av-menu button:hover{background:var(--bg3);color:var(--text)}
+.nav-av-menu button i{font-size:15px;color:var(--text3)}
+.nav-av-menu .signout{color:var(--red2)}
+.nav-av-menu .signout i{color:var(--red2)}
+
+/* ── LAYOUT ── */
+.app-body{display:flex;flex:1;overflow:hidden}
+.sidebar{width:256px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-section{padding:14px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-family:var(--font-head);font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
+
+/* Challenges */
+.ch{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.ch:last-child{border-bottom:none}
+.ch-ico{width:30px;height:30px;border-radius:6px;background:var(--red3);border:1px solid var(--redborder);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ch-ico i{font-size:16px;color:var(--red2)}
+.ch-nm{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.ch-meta{font-size:10px;color:var(--text3);margin-top:2px}
+.pbar{height:2px;background:var(--bg4);border-radius:1px;margin:4px 0 2px}
+.pbar-f{height:100%;background:var(--red2);border-radius:1px;transition:.4s}
+.join-sm{margin-left:auto;background:none;border:1px solid var(--border2);border-radius:10px;padding:3px 9px;font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font);transition:.18s;flex-shrink:0}
+.join-sm:hover,.join-sm.on{border-color:var(--red2);color:var(--red2);background:var(--red3)}
+
+/* Friends */
+.fr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.fr:last-child{border-bottom:none}
+.fr-av{width:28px;height:28px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.fr-nm{font-size:12px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-sub{font-size:10px;color:var(--text3)}
+.follow-sm{background:none;border:1px solid var(--redborder);border-radius:10px;padding:3px 10px;font-size:10px;color:var(--red2);cursor:pointer;font-family:var(--font);transition:.18s}
+.follow-sm:hover,.follow-sm.on{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ── FEED ── */
+.feed-col{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
+.compose-box{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:50}
+.compose-inner{display:flex;gap:10px}
+.my-av{width:34px;height:34px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0;border:1px solid var(--redborder)}
+.compose-right{flex:1}
+.compose-ta{width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:14px;resize:none;outline:none;line-height:1.5;min-height:42px;padding-top:4px}
+.compose-ta::placeholder{color:var(--text3)}
+.compose-div{height:1px;background:var(--border);margin:10px 0}
+.compose-acts{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.tag-chip{background:transparent;border:1px solid var(--border2);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--text3);cursor:pointer;font-family:var(--font);transition:.18s;display:flex;align-items:center;gap:3px}
+.tag-chip i{font-size:12px}
+.tag-chip:hover{color:var(--text2);border-color:var(--border2)}
+.tag-chip.on{background:var(--red3);border-color:var(--redborder);color:var(--red2)}
+.post-submit{margin-left:auto;background:var(--red);color:#fff;border:none;border-radius:20px;padding:6px 18px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font);transition:.18s}
+.post-submit:hover{background:var(--red2)}
+.post-submit:disabled{opacity:.5;cursor:not-allowed}
+
+/* Posts */
+.post-item{border-bottom:1px solid var(--border);padding:16px 18px;transition:.15s}
+.post-item:hover{background:rgba(255,255,255,.013)}
+.pi-head{display:flex;gap:10px;margin-bottom:11px}
+.pi-av{width:36px;height:36px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.pi-name{font-size:14px;font-weight:600;color:var(--text)}
+.pi-sub{font-size:11px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:6px}
+.pi-badge{background:var(--red3);color:var(--red2);font-size:10px;padding:1px 7px;border-radius:8px;border:1px solid var(--redborder);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.pi-body{font-size:14px;color:var(--text);line-height:1.65;margin-bottom:11px;word-break:break-word}
+.pi-stats{display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap}
+.pi-stat{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px}
+.pi-stat i{font-size:13px;color:var(--red2)}
+.pi-acts{display:flex;gap:0;border-top:1px solid var(--border);padding-top:10px}
+.pi-act{background:none;border:none;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:4px;font-family:var(--font);transition:.18s}
+.pi-act:hover{background:var(--bg3);color:var(--text2)}
+.pi-act.liked{color:var(--red2)}
+.pi-act i{font-size:15px}
+.pi-act:last-child{margin-left:auto}
+.feed-loading{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+.feed-empty{text-align:center;padding:48px 24px;color:var(--text3)}
+.feed-empty i{font-size:40px;color:var(--border2);display:block;margin-bottom:12px}
+.feed-empty p{font-size:14px}
+
+/* ── PAGES ── */
+.app-page{display:none;flex:1;overflow:hidden;flex-direction:column}
+.app-page.active{display:flex}
+.app-page-scroll{display:none;flex:1;overflow-y:auto;flex-direction:column}
+.app-page-scroll.active{display:flex}
+.page-content{padding:24px;flex:1}
+.page-title{font-family:var(--font-head);font-size:36px;font-weight:800;letter-spacing:1px;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+
+/* ── EXPLORE ── */
+.ex-filters{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.ex-f{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--text3);cursor:pointer;font-family:var(--font);transition:.18s}
+.ex-f:hover{color:var(--text2)}
+.ex-f.on{background:var(--red3);border-color:var(--redborder);color:var(--red2);font-weight:600}
+.ex-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.ex-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.ex-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.ex-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red)}
+.ex-cat{font-size:10px;color:var(--red2);font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px}
+.ex-card-title{font-family:var(--font-head);font-size:20px;font-weight:700;margin-bottom:6px;line-height:1.2}
+.ex-card-desc{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+.ex-metas{display:flex;gap:10px}
+.ex-m{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.ex-m i{font-size:13px;color:var(--red2)}
+
+/* ── GYM MAP ── */
+.map-layout{display:grid;grid-template-columns:1fr 290px;height:100%;overflow:hidden}
+#gym-map{height:100%;width:100%;z-index:1;background:#111}
+.map-panel{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.map-search-box{padding:12px;border-bottom:1px solid var(--border)}
+.map-search{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.map-search:focus{border-color:var(--redborder)}
+.map-search::placeholder{color:var(--text3)}
+.map-panel-title{font-family:var(--font-head);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:10px 12px 6px}
+.gym-list{overflow-y:auto;flex:1}
+.gym-item{padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
+.gym-item:hover,.gym-item.sel{background:var(--bg3)}
+.gym-item.sel{border-left:2px solid var(--red2)}
+.gym-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.gym-addr{font-size:11px;color:var(--text3);margin-bottom:5px}
+.gym-mrow{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.g-av{width:18px;height:18px;border-radius:50%;background:var(--red);border:1px solid var(--bg2);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff;margin-left:-3px;flex-shrink:0}
+.g-av:first-child{margin-left:0}
+.gym-detail{padding:12px;border-top:1px solid var(--border);background:var(--bg3);display:none;overflow-y:auto;max-height:280px}
+.gym-detail.show{display:block}
+.gd-title{font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:9px}
+.gd-mem-title{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px}
+.gd-mem{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border)}
+.gd-mem:last-child{border-bottom:none}
+.gd-mav{width:26px;height:26px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.gd-mnm{font-size:12px;font-weight:600;flex:1}
+.gd-msub{font-size:10px;color:var(--text3)}
+.conn-btn{background:none;border:1px solid var(--redborder);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--red2);cursor:pointer;font-family:var(--font);transition:.18s}
+.conn-btn:hover{background:var(--red);border-color:var(--red);color:#fff}
+.gym-msg-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:var(--font);transition:.18s;margin-top:10px;letter-spacing:.3px}
+.gym-msg-btn:hover{background:var(--red2)}
+
+/* ── LEADERBOARD ── */
+.lb-periods{display:flex;gap:6px;margin-bottom:18px}
+.lb-p{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--text3);cursor:pointer;font-family:var(--font);transition:.18s}
+.lb-p.on,.lb-p:hover{background:var(--red3);border-color:var(--redborder);color:var(--red2);font-weight:600}
+.lb-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);transition:.15s}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:var(--bg3)}
+.lb-row.gold{background:linear-gradient(90deg,rgba(192,57,43,.07),transparent)}
+.lb-rank{font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--text3);min-width:34px}
+.lb-rank.r1{color:var(--red2)}.lb-rank.r2{color:#aaa}.lb-rank.r3{color:#9e6b3a}
+.lb-av{width:34px;height:34px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.lb-inf{flex:1}
+.lb-nm{font-size:13px;font-weight:600}
+.lb-sub2{font-size:11px;color:var(--text3)}
+.lb-score{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--red2);text-align:right}
+.lb-unit2{font-size:10px;color:var(--text3);font-family:var(--font);text-align:right}
+
+/* ── PROFILE ── */
+.profile-hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:22px;margin-bottom:14px;position:relative;overflow:hidden}
+.ph-bg{position:absolute;top:0;left:0;right:0;height:76px;background:linear-gradient(135deg,var(--red3),var(--bg2));pointer-events:none}
+.ph-main{display:flex;align-items:flex-end;gap:12px;position:relative;margin-bottom:12px}
+.ph-av{width:64px;height:64px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;border:3px solid var(--bg2);flex-shrink:0;font-family:var(--font-head)}
+.ph-name{font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:.5px;line-height:1}
+.ph-handle{font-size:12px;color:var(--text3);margin-top:3px}
+.ph-bio{font-size:13px;color:var(--text2);margin-bottom:12px;position:relative;line-height:1.6}
+.ph-tags{display:flex;gap:5px;margin-bottom:14px;position:relative;flex-wrap:wrap}
+.ph-tag{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:2px 9px;font-size:11px;color:var(--text3)}
+.ph-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}
+.ph-stat{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center}
+.ph-sv{font-family:var(--font-head);font-size:24px;font-weight:800;color:var(--red2)}
+.ph-sl{font-size:10px;color:var(--text3);margin-top:1px}
+.badges-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;position:relative}
+.bdg{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px;text-align:center}
+.bdg-ico{font-size:24px;margin-bottom:4px}
+.bdg-nm{font-size:11px;font-weight:600;margin-bottom:1px}
+.bdg-ds{font-size:10px;color:var(--text3)}
+.wlog{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.wlog-head{font-family:var(--font-head);font-size:18px;font-weight:700;margin-bottom:10px}
+.wl-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.wl-item:last-child{border-bottom:none}
+.wl-dot{width:7px;height:7px;border-radius:50%;background:var(--red2);flex-shrink:0}
+.wl-nm{font-size:13px;font-weight:500;flex:1}
+.wl-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.wl-cal{font-size:13px;color:var(--red2);font-weight:600;flex-shrink:0}
+.edit-profile-btn{position:relative;background:none;border:1px solid var(--border2);border-radius:var(--r);padding:6px 14px;color:var(--text2);font-family:var(--font);font-size:12px;cursor:pointer;transition:.18s;margin-top:12px}
+.edit-profile-btn:hover{border-color:var(--red2);color:var(--red2)}
+
+/* ── LEAFLET ── */
+.leaflet-container{background:#111 !important}
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.82) saturate(.6)}
+.custom-gym-marker{width:26px;height:26px;border-radius:50%;background:var(--red);border:2px solid rgba(231,76,60,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;box-shadow:0 0 10px rgba(192,57,43,.5);cursor:pointer}
+.leaflet-popup-content-wrapper{background:var(--bg2) !important;border:1px solid var(--redborder) !important;border-radius:var(--r2) !important;color:var(--text) !important;box-shadow:0 4px 20px rgba(0,0,0,.6) !important}
+.leaflet-popup-tip{background:var(--bg2) !important}
+.leaflet-popup-content{margin:12px 14px !important;font-family:var(--font) !important}
+.popup-gym-name{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:3px}
+.popup-addr{font-size:11px;color:var(--text3);margin-bottom:7px}
+.popup-count{font-size:12px;color:var(--red2);font-weight:600;margin-bottom:7px}
+.popup-btn{background:var(--red);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);width:100%;transition:.18s}
+.popup-btn:hover{background:var(--red2)}
+.leaflet-control-zoom a{background:var(--bg2) !important;color:var(--text2) !important;border-color:var(--border) !important}
+.leaflet-control-zoom a:hover{background:var(--bg3) !important;color:var(--text) !important}
+.leaflet-attribution-flag{display:none !important}
+.leaflet-control-attribution{background:rgba(0,0,0,.5) !important;color:var(--text3) !important;font-size:9px !important}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg3);border:1px solid var(--redborder);color:var(--text);font-size:13px;padding:9px 18px;border-radius:20px;opacity:0;transition:.25s;z-index:9999;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── LOADING SPINNER ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--red2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">SPOT<span>ME</span></div>
+    <div class="auth-tagline">Find your people. Find your gym. Get after it.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+    <div id="login-form">
+      <div class="auth-field"><label>Email</label><input class="auth-input" id="login-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input class="auth-input" id="login-password" type="password" placeholder="••••••••"></div>
+      <button class="auth-btn" onclick="signIn()">Sign In</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="auth-field"><label>Full Name</label><input class="auth-input" id="signup-name" type="text" placeholder="Alex Jordan"></div>
+      <div class="auth-field"><label>Email</label><input class="auth-input" id="signup-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input class="auth-input" id="signup-password" type="password" placeholder="Min. 6 characters"></div>
+      <button class="auth-btn" onclick="signUp()">Create Account</button>
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until auth) -->
+<div id="main-app" style="display:none;flex-direction:column;height:100%">
+
+<nav>
+  <div class="logo" onclick="showPage('feed',document.querySelector('[data-p=feed]'))">SPOT<span>ME</span></div>
+  <button class="nav-btn active" data-p="feed" onclick="showPage('feed',this)"><i class="ti ti-home"></i>Feed</button>
+  <button class="nav-btn" data-p="explore" onclick="showPage('explore',this)"><i class="ti ti-compass"></i>Explore</button>
+  <button class="nav-btn" data-p="gyms" onclick="showPage('gyms',this)"><i class="ti ti-map-pin"></i>Gyms</button>
+  <button class="nav-btn" data-p="leaderboard" onclick="showPage('leaderboard',this)"><i class="ti ti-trophy"></i>Board</button>
+  <button class="nav-btn" data-p="profile" onclick="showPage('profile',this)"><i class="ti ti-user"></i>Profile</button>
+  <div class="nav-av" id="nav-av" onclick="toggleAvatarMenu()">
+    <span id="nav-av-initials">?</span>
+    <div class="nav-av-menu" id="nav-av-menu">
+      <button onclick="showPage('profile',null);toggleAvatarMenu()"><i class="ti ti-user"></i>My Profile</button>
+      <button onclick="showPage('profile',null);toggleAvatarMenu()"><i class="ti ti-settings"></i>Settings</button>
+      <button class="signout" onclick="signOut()"><i class="ti ti-logout"></i>Sign Out</button>
+    </div>
+  </div>
+</nav>
+
+<div id="toast"></div>
+
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="main-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Active Challenges</div>
+      <div id="challenges-list"></div>
+    </div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-label">Suggested Users</div>
+      <div id="sidebar-friends"></div>
+    </div>
+  </div>
+
+  <!-- FEED -->
+  <div class="app-page active" id="page-feed">
+    <div class="feed-col">
+      <div class="compose-box">
+        <div class="compose-inner">
+          <div class="my-av" id="compose-av">?</div>
+          <div class="compose-right">
+            <textarea class="compose-ta" id="postInput" placeholder="What did you train today? Share a PR, tip, or progress..." rows="2"></textarea>
+            <div class="compose-div"></div>
+            <div class="compose-acts">
+              <button class="tag-chip" data-tag="strength" onclick="toggleTag('strength',this)"><i class="ti ti-barbell"></i>Strength</button>
+              <button class="tag-chip" data-tag="cardio" onclick="toggleTag('cardio',this)"><i class="ti ti-run"></i>Cardio</button>
+              <button class="tag-chip" data-tag="nutrition" onclick="toggleTag('nutrition',this)"><i class="ti ti-salad"></i>Nutrition</button>
+              <button class="tag-chip" data-tag="recovery" onclick="toggleTag('recovery',this)"><i class="ti ti-heart-rate-monitor"></i>Recovery</button>
+              <button class="post-submit" id="post-btn" onclick="submitPost()">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="post-list"><div class="feed-loading"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
+  <!-- EXPLORE -->
+  <div class="app-page-scroll" id="page-explore">
+    <div class="page-content">
+      <div class="page-title">Explore</div>
+      <div class="page-sub">Discover workouts, guides, and content from the community</div>
+      <div class="ex-filters">
+        <button class="ex-f on" onclick="filterEx('all',this)">All</button>
+        <button class="ex-f" onclick="filterEx('strength',this)">Strength</button>
+        <button class="ex-f" onclick="filterEx('cardio',this)">Cardio</button>
+        <button class="ex-f" onclick="filterEx('nutrition',this)">Nutrition</button>
+        <button class="ex-f" onclick="filterEx('recovery',this)">Recovery</button>
+        <button class="ex-f" onclick="filterEx('mobility',this)">Mobility</button>
+      </div>
+      <div class="ex-grid" id="ex-grid"></div>
+    </div>
+  </div>
+
+  <!-- GYMS MAP -->
+  <div class="app-page" id="page-gyms">
+    <div class="map-layout">
+      <div id="gym-map"></div>
+      <div class="map-panel">
+        <div class="map-search-box">
+          <input class="map-search" id="gymSearch" placeholder="Search gyms or cities..." oninput="filterGyms(this.value)">
+        </div>
+        <div class="map-panel-title">Gym Locations</div>
+        <div class="gym-list" id="gym-list"></div>
+        <div class="gym-detail" id="gym-detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="app-page-scroll" id="page-leaderboard">
+    <div class="page-content">
+      <div class="page-title">Leaderboard</div>
+      <div class="lb-periods">
+        <button class="lb-p on" onclick="setLb('week',this)">This Week</button>
+        <button class="lb-p" onclick="setLb('month',this)">This Month</button>
+        <button class="lb-p" onclick="setLb('all',this)">All Time</button>
+      </div>
+      <div class="lb-box" id="lb-list"></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="app-page-scroll" id="page-profile">
+    <div class="page-content">
+      <div class="profile-hero">
+        <div class="ph-bg"></div>
+        <div class="ph-main">
+          <div class="ph-av" id="profile-av">?</div>
+          <div style="position:relative">
+            <div class="ph-name" id="profile-name">Loading...</div>
+            <div class="ph-handle" id="profile-handle">@...</div>
+          </div>
+        </div>
+        <div class="ph-bio" id="profile-bio">Welcome to SpotMe! Edit your profile to add a bio.</div>
+        <div class="ph-tags">
+          <span class="ph-tag">SpotMe Member</span>
+        </div>
+        <div class="ph-stats">
+          <div class="ph-stat"><div class="ph-sv" id="stat-workouts">0</div><div class="ph-sl">Workouts</div></div>
+          <div class="ph-stat"><div class="ph-sv" id="stat-followers">0</div><div class="ph-sl">Followers</div></div>
+          <div class="ph-stat"><div class="ph-sv" id="stat-following">0</div><div class="ph-sl">Following</div></div>
+          <div class="ph-stat"><div class="ph-sv" id="stat-posts">0</div><div class="ph-sl">Posts</div></div>
+        </div>
+        <div style="margin-top:12px;position:relative">
+          <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">Achievements</div>
+          <div class="badges-g">
+            <div class="bdg"><div class="bdg-ico">🏋️</div><div class="bdg-nm">New Member</div><div class="bdg-ds">Joined SpotMe</div></div>
+            <div class="bdg" style="opacity:.35"><div class="bdg-ico">🔥</div><div class="bdg-nm">30-Day Streak</div><div class="bdg-ds">Train 30 days</div></div>
+            <div class="bdg" style="opacity:.35"><div class="bdg-ico">💪</div><div class="bdg-nm">PR Crusher</div><div class="bdg-ds">Set 10 records</div></div>
+          </div>
+        </div>
+        <button class="edit-profile-btn" onclick="toast('Profile editing coming soon!')">Edit Profile</button>
+      </div>
+      <div class="wlog">
+        <div class="wlog-head">Recent Workouts</div>
+        <div id="wlog-list"><div style="font-size:13px;color:var(--text3);padding:12px 0">No workouts logged yet. Start tracking your training!</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- app-body -->
+</div><!-- main-app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ─── SUPABASE INIT ───
+const SUPABASE_URL = 'https://ifdiogpvobpewwnabwam.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZGlvZ3B2b2JwZXd3bmFid2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTA1MzIsImV4cCI6MjA5NTc2NjUzMn0.Za0ogVjqAusmTy2sHFnrbdi5XCjSKgIat78laSj3TNY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let selectedTag = '';
+let mapInited = false;
+let selectedGymId = null;
+let lbPeriod = 'week';
+let exFilter = 'all';
+
+// ─── AUTH ───
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await loadProfile();
+    showApp();
+  }
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('on', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+  setAuthErr('');
+}
+
+function setAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
+
+async function signIn() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { setAuthErr('Please fill in all fields.'); return; }
+  setAuthErr('Signing in...');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { setAuthErr(error.message); return; }
+  currentUser = data.user;
+  await loadProfile();
+  showApp();
+}
+
+async function signUp() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!name || !email || !password) { setAuthErr('Please fill in all fields.'); return; }
+  if (password.length < 6) { setAuthErr('Password must be at least 6 characters.'); return; }
+  setAuthErr('Creating account...');
+  const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+  if (error) { setAuthErr(error.message); return; }
+  currentUser = data.user;
+  await loadProfile();
+  showApp();
+  toast('Welcome to SpotMe! 🎉');
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function loadProfile() {
+  if (!currentUser) return;
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = data;
+  updateProfileUI();
+}
+
+function updateProfileUI() {
+  if (!currentProfile) return;
+  const name = currentProfile.full_name || currentProfile.username || 'User';
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const handle = '@' + (currentProfile.username || 'user');
+
+  document.getElementById('nav-av-initials').textContent = initials;
+  document.getElementById('compose-av').textContent = initials;
+  document.getElementById('profile-av').textContent = initials;
+  document.getElementById('profile-name').textContent = name;
+  document.getElementById('profile-handle').textContent = handle + ' · SpotMe Member';
+  if (currentProfile.bio) document.getElementById('profile-bio').textContent = currentProfile.bio;
+  document.getElementById('stat-workouts').textContent = currentProfile.workouts_count || 0;
+  document.getElementById('stat-followers').textContent = currentProfile.followers_count || 0;
+  document.getElementById('stat-following').textContent = currentProfile.following_count || 0;
+  document.getElementById('stat-posts').textContent = currentProfile.posts_count || 0;
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  loadFeed();
+  loadChallenges();
+  loadSuggestedUsers();
+  renderExplore();
+  renderLb();
+}
+
+// ─── TOAST ───
+let toastT;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ─── NAVIGATION ───
+function showPage(id, btn) {
+  document.querySelectorAll('.app-page,.app-page-scroll').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('main-sidebar').style.display = id === 'feed' ? 'flex' : 'none';
+  if (btn && btn.classList) btn.classList.add('active');
+  if (id === 'gyms') setTimeout(initMap, 80);
+}
+
+function toggleAvatarMenu() {
+  document.getElementById('nav-av-menu').classList.toggle('show');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('nav-av').contains(e.target)) {
+    document.getElementById('nav-av-menu').classList.remove('show');
+  }
+});
+
+// ─── FEED / POSTS ───
+async function loadFeed() {
+  document.getElementById('post-list').innerHTML = '<div class="feed-loading"><div class="spinner"></div></div>';
+  const { data: posts, error } = await sb
+    .from('posts')
+    .select('*, profiles(username, full_name), post_stats(*)')
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error || !posts || posts.length === 0) {
+    document.getElementById('post-list').innerHTML = `
+      <div class="feed-empty">
+        <i class="ti ti-barbell"></i>
+        <p>No posts yet. Be the first to share your workout!</p>
+      </div>`;
+    return;
+  }
+  renderPosts(posts);
+}
+
+function renderPosts(posts) {
+  document.getElementById('post-list').innerHTML = posts.map(p => {
+    const name = p.profiles?.full_name || p.profiles?.username || 'SpotMe User';
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const isOwn = currentUser && p.user_id === currentUser.id;
+    const timeAgo = formatTime(p.created_at);
+    const statsH = p.post_stats && p.post_stats.length
+      ? `<div class="pi-stats">${p.post_stats.map(s=>`<span class="pi-stat"><i class="ti ${s.icon}"></i>${s.value}</span>`).join('')}</div>` : '';
+    return `<div class="post-item" id="post-${p.id}">
+      <div class="pi-head">
+        <div class="pi-av">${initials}</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="pi-name">${name}</span>
+            <span class="pi-badge">${p.tag}</span>
+          </div>
+          <div class="pi-sub">@${p.profiles?.username||'user'} &middot; ${timeAgo}</div>
+        </div>
+      </div>
+      <div class="pi-body">${escHtml(p.body)}</div>
+      ${statsH}
+      <div class="pi-acts">
+        <button class="pi-act" onclick="toggleLike(${p.id},this)"><i class="ti ti-heart"></i>${p.likes_count||0}</button>
+        <button class="pi-act"><i class="ti ti-message-circle"></i>${p.comments_count||0}</button>
+        <button class="pi-act" onclick="toast('Link copied!')"><i class="ti ti-share"></i>Share</button>
+        <button class="pi-act" onclick="toast('Saved!')"><i class="ti ti-bookmark"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatTime(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleTag(tag, btn) {
+  document.querySelectorAll('.tag-chip').forEach(b => b.classList.remove('on'));
+  selectedTag = selectedTag === tag ? '' : tag;
+  if (selectedTag) btn.classList.add('on');
+}
+
+async function submitPost() {
+  if (!currentUser) { toast('Please sign in first'); return; }
+  const body = document.getElementById('postInput').value.trim();
+  if (!body) { toast('Write something first!'); return; }
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true; btn.textContent = 'Posting...';
+
+  const { error } = await sb.from('posts').insert({
+    user_id: currentUser.id,
+    body,
+    tag: selectedTag || 'general'
+  });
+
+  btn.disabled = false; btn.textContent = 'Post';
+  if (error) { toast('Error posting. Try again.'); return; }
+
+  // Update post count
+  await sb.from('profiles').update({ posts_count: (currentProfile?.posts_count||0)+1 }).eq('id', currentUser.id);
+
+  document.getElementById('postInput').value = '';
+  selectedTag = '';
+  document.querySelectorAll('.tag-chip').forEach(b => b.classList.remove('on'));
+  toast('Post shared with the community!');
+  loadFeed();
+}
+
+async function toggleLike(postId, btn) {
+  if (!currentUser) { toast('Sign in to like posts'); return; }
+  const isLiked = btn.classList.contains('liked');
+  if (isLiked) {
+    await sb.from('likes').delete().eq('user_id', currentUser.id).eq('post_id', postId);
+    await sb.from('posts').update({ likes_count: sb.rpc('decrement') }).eq('id', postId);
+    btn.classList.remove('liked');
+  } else {
+    await sb.from('likes').insert({ user_id: currentUser.id, post_id: postId });
+    btn.classList.add('liked');
+    toast('❤️');
+  }
+  loadFeed();
+}
+
+// ─── CHALLENGES ───
+async function loadChallenges() {
+  const { data } = await sb.from('challenges').select('*').limit(4);
+  if (!data) return;
+  const progress = [63, 40, 22, 15];
+  const days = [19, 12, 7, 4];
+  const icons = ['ti-flame','ti-walk','ti-swim','ti-bike'];
+  document.getElementById('challenges-list').innerHTML = data.map((c,i) => `
+    <div class="ch">
+      <div class="ch-ico"><i class="ti ${icons[i]||'ti-flame'}"></i></div>
+      <div style="flex:1">
+        <div class="ch-nm">${c.title}</div>
+        <div class="ch-meta">${c.participants_count.toLocaleString()} participants</div>
+        <div class="pbar"><div class="pbar-f" style="width:${progress[i]||20}%"></div></div>
+        <div class="ch-meta">Day ${days[i]||1} / ${c.duration_days}</div>
+      </div>
+      <button class="join-sm" onclick="joinChallenge(${c.id},this)">${i===0?'In':'Join'}</button>
+    </div>`).join('');
+  if (data[0]) document.querySelector('.join-sm').classList.add('on');
+}
+
+async function joinChallenge(id, btn) {
+  if (!currentUser) { toast('Sign in to join challenges'); return; }
+  btn.classList.toggle('on');
+  btn.textContent = btn.classList.contains('on') ? 'In' : 'Join';
+  if (btn.classList.contains('on')) {
+    await sb.from('challenge_participants').insert({ user_id: currentUser.id, challenge_id: id }).select();
+    toast('Challenge joined! 💪');
+  } else {
+    await sb.from('challenge_participants').delete().eq('user_id', currentUser.id).eq('challenge_id', id);
+    toast('Left challenge');
+  }
+}
+
+// ─── SUGGESTED USERS ───
+async function loadSuggestedUsers() {
+  const { data } = await sb.from('profiles').select('*').neq('id', currentUser?.id || '').limit(5);
+  if (!data || data.length === 0) {
+    document.getElementById('sidebar-friends').innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">No users yet. Invite friends!</div>';
+    return;
+  }
+  document.getElementById('sidebar-friends').innerHTML = data.map(p => {
+    const name = p.full_name || p.username || 'SpotMe User';
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="fr">
+      <div class="fr-av">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div class="fr-nm">${name}</div>
+        <div class="fr-sub">@${p.username||'user'}</div>
+      </div>
+      <button class="follow-sm" onclick="followUser('${p.id}',this)">+</button>
+    </div>`;
+  }).join('');
+}
+
+async function followUser(userId, btn) {
+  if (!currentUser) { toast('Sign in to follow users'); return; }
+  const isFollowing = btn.classList.contains('on');
+  if (isFollowing) {
+    await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
+    btn.classList.remove('on'); btn.textContent = '+';
+  } else {
+    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+    btn.classList.add('on'); btn.textContent = '✓';
+    toast('Following!');
+  }
+}
+
+// ─── EXPLORE ───
+const exData = [
+  {cat:'strength',title:'5×5 Strength Blueprint',desc:'Classic linear progression for raw strength, proven for beginners and intermediates.',members:3200,saves:870},
+  {cat:'cardio',title:'Zone 2 Training Guide',desc:'Build your aerobic base and fat oxidation with structured low-intensity work.',members:2100,saves:540},
+  {cat:'nutrition',title:'Reverse Dieting Explained',desc:'How to increase calories after a cut without gaining unwanted body fat.',members:1800,saves:420},
+  {cat:'mobility',title:'Hip Mobility for Lifters',desc:'Daily 10-min routine to unlock deeper squats and eliminate hip impingement.',members:2800,saves:670},
+  {cat:'recovery',title:'Sleep & Performance Science',desc:'Sleep impacts your gains more than most supplements. Here\'s the research.',members:1500,saves:390},
+  {cat:'strength',title:'Progressive Overload 101',desc:'The single most important training principle you need to master.',members:4100,saves:1020},
+  {cat:'cardio',title:'Running for Lifters',desc:'Add running to your program without losing strength or muscle mass.',members:980,saves:280},
+  {cat:'nutrition',title:'Pre & Post Workout Nutrition',desc:'Exactly what to eat to maximize performance and muscle protein synthesis.',members:2400,saves:610},
+];
+
+function renderExplore() {
+  const data = exFilter === 'all' ? exData : exData.filter(e => e.cat === exFilter);
+  document.getElementById('ex-grid').innerHTML = data.map(e => `
+    <div class="ex-card" onclick="toast('Opening: ${e.title}')">
+      <div class="ex-cat">${e.cat}</div>
+      <div class="ex-card-title">${e.title}</div>
+      <div class="ex-card-desc">${e.desc}</div>
+      <div class="ex-metas">
+        <span class="ex-m"><i class="ti ti-users"></i>${e.members.toLocaleString()}</span>
+        <span class="ex-m"><i class="ti ti-bookmark"></i>${e.saves.toLocaleString()}</span>
+      </div>
+    </div>`).join('');
+}
+
+function filterEx(f, btn) {
+  exFilter = f;
+  document.querySelectorAll('.ex-f').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderExplore();
+}
+
+// ─── LEADERBOARD ───
+async function renderLb() {
+  const { data } = await sb.from('profiles').select('*').order('points', { ascending: false }).limit(10);
+  const el = document.getElementById('lb-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">No rankings yet. Start logging workouts!</div>';
+    return;
+  }
+  el.innerHTML = data.map((p, i) => {
+    const rank = i + 1;
+    const rcls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
+    const name = p.full_name || p.username || 'User';
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="lb-row${rank===1?' gold':''}">
+      <div class="lb-rank ${rcls}">#${rank}</div>
+      <div class="lb-av">${initials}</div>
+      <div class="lb-inf"><div class="lb-nm">${name}</div><div class="lb-sub2">@${p.username||'user'}</div></div>
+      <div><div class="lb-score">${(p.points||0).toLocaleString()}</div><div class="lb-unit2">points</div></div>
+    </div>`;
+  }).join('');
+}
+
+function setLb(p, btn) {
+  lbPeriod = p;
+  document.querySelectorAll('.lb-p').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderLb();
+}
+
+// ─── GYM MAP ───
+const GYM_DATA = [
+  {id:1,name:'Iron District Gym',addr:'Downtown, Los Angeles',lat:34.0430,lng:-118.2673,members:['MK','DL','TW']},
+  {id:2,name:'Pulse Fitness LA',addr:'Silver Lake, Los Angeles',lat:34.0870,lng:-118.2712,members:['SR','JP']},
+  {id:3,name:'The Barbell Club',addr:'Venice Beach, CA',lat:33.9850,lng:-118.4695,members:['RB','CK','NR']},
+  {id:4,name:'Gold Standard Gym',addr:'Midtown, New York City',lat:40.7580,lng:-73.9855,members:['MK','SR','JP']},
+  {id:5,name:'CrossFit 5th Ave',addr:'Midtown Manhattan, NY',lat:40.7484,lng:-73.9967,members:['DL','TW']},
+  {id:6,name:'SweatBox London',addr:'Shoreditch, London',lat:51.5233,lng:-0.0760,members:['CK','NR','MK']},
+  {id:7,name:'Athlete Republic',addr:'Canary Wharf, London',lat:51.5054,lng:-0.0235,members:['SR','RB']},
+  {id:8,name:'Forge Fitness Tokyo',addr:'Shibuya, Tokyo',lat:35.6604,lng:139.6984,members:['JP','DL']},
+  {id:9,name:'Peak Performance',addr:'Downtown Dubai',lat:25.1972,lng:55.2744,members:['TW','NR','CK']},
+  {id:10,name:'Urban Muscle',addr:'CBD, Sydney',lat:-33.8688,lng:151.2093,members:['MK','RB','JP']},
+  {id:11,name:'Hercules Gym',addr:'Mitte, Berlin',lat:52.5200,lng:13.4050,members:['SR','DL']},
+  {id:12,name:'The Powerhouse',addr:'Loop, Chicago',lat:41.8781,lng:-87.6298,members:['CK','NR','TW']},
+  {id:13,name:'Titan Training',addr:'South Beach, Miami',lat:25.7617,lng:-80.1918,members:['RB','MK']},
+  {id:14,name:'FitNation',addr:'Paulista, São Paulo',lat:-23.5505,lng:-46.6333,members:['JP','SR','NR']},
+  {id:15,name:'Strength Co.',addr:'Downtown Toronto',lat:43.6532,lng:-79.3832,members:['DL','TW','CK']},
+];
+
+let leafMap;
+
+function initMap() {
+  if (mapInited) return;
+  mapInited = true;
+  leafMap = L.map('gym-map', { center: [25, 10], zoom: 2, attributionControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(leafMap);
+
+  GYM_DATA.forEach(gym => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="custom-gym-marker"><i class="ti ti-barbell"></i></div>`,
+      iconSize: [26,26], iconAnchor: [13,13], popupAnchor: [0,-16]
+    });
+    const marker = L.marker([gym.lat, gym.lng], { icon }).addTo(leafMap);
+    marker.bindPopup(`
+      <div class="popup-gym-name">${gym.name}</div>
+      <div class="popup-addr">${gym.addr}</div>
+      <div class="popup-count"><i class="ti ti-users"></i> ${gym.members.length} SpotMe members here</div>
+      <button class="popup-btn" onclick="selectGym(${gym.id})">View Members & Connect</button>
+    `);
+  });
+
+  renderGymList(GYM_DATA);
+}
+
+function renderGymList(gyms) {
+  document.getElementById('gym-list').innerHTML = gyms.map(g => {
+    const avHtml = g.members.slice(0,3).map(m => `<div class="g-av">${m}</div>`).join('');
+    const extra = g.members.length > 3 ? `<span style="font-size:10px;color:var(--text3);margin-left:3px">+${g.members.length-3}</span>` : '';
+    return `<div class="gym-item${selectedGymId===g.id?' sel':''}" id="gi-${g.id}" onclick="selectGym(${g.id})">
+      <div class="gym-name">${g.name}</div>
+      <div class="gym-addr">${g.addr}</div>
+      <div class="gym-mrow">${avHtml}${extra}<span style="margin-left:4px">${g.members.length} member${g.members.length!==1?'s':''}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function selectGym(id) {
+  selectedGymId = id;
+  const gym = GYM_DATA.find(g => g.id === id);
+  if (!gym) return;
+  document.querySelectorAll('.gym-item').forEach(el => el.classList.remove('sel'));
+  const el = document.getElementById('gi-'+id);
+  if (el) { el.classList.add('sel'); el.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+  if (leafMap) leafMap.flyTo([gym.lat, gym.lng], 13, { duration: 1.1 });
+
+  const detail = document.getElementById('gym-detail');
+  const membersHtml = gym.members.map(m => `
+    <div class="gd-mem">
+      <div class="gd-mav">${m}</div>
+      <div style="flex:1"><div class="gd-mnm">Member ${m}</div><div class="gd-msub">SpotMe User</div></div>
+      <button class="conn-btn" onclick="toast('Connection request sent!')">Connect</button>
+    </div>`).join('');
+  detail.innerHTML = `
+    <div class="gd-title">${gym.name}</div>
+    <div class="gd-mem-title">Members at this gym</div>
+    ${membersHtml}
+    <button class="gym-msg-btn" onclick="toast('Message sent to all members at ${gym.name}!')">📍 Message All Members Here</button>
+  `;
+  detail.classList.add('show');
+}
+
+function filterGyms(q) {
+  const filtered = q ? GYM_DATA.filter(g =>
+    g.name.toLowerCase().includes(q.toLowerCase()) ||
+    g.addr.toLowerCase().includes(q.toLowerCase())
+  ) : GYM_DATA;
+  renderGymList(filtered);
+}
+
+// ─── INIT ───
+checkAuth();
+</script>
+</body>
+</html>
