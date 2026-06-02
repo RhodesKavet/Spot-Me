@@ -1,6 +1,3 @@
-bash
-
-cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +29,7 @@ body{font-family:var(--font);color:var(--text);font-size:15px;display:flex;flex-
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px}
-
+ 
 /* ════════════════════════════════════════
    AUTH
 ════════════════════════════════════════ */
@@ -79,7 +76,7 @@ body{font-family:var(--font);color:var(--text);font-size:15px;display:flex;flex-
 .auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(192,57,43,.5)}
 .auth-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(192,57,43,.3)}
 .auth-err{font-size:12px;color:var(--red2);text-align:center;margin-top:10px;min-height:16px}
-
+ 
 /* ════════════════════════════════════════
    NAV
 ════════════════════════════════════════ */
@@ -142,7 +139,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .nav-av-menu button i{font-size:14px;color:var(--text3)}
 .nav-av-menu .so{color:var(--red2)}.nav-av-menu .so i{color:var(--red2)}
 .nav-av-menu hr{border:none;border-top:1px solid var(--border);margin:4px 0}
-
+ 
 /* ════════════════════════════════════════
    LAYOUT
 ════════════════════════════════════════ */
@@ -159,7 +156,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   display:flex;align-items:center;gap:5px;
 }
 .sb-label::after{content:'';flex:1;height:1px;background:var(--border)}
-
+ 
 /* challenges */
 .ch{display:flex;align-items:flex-start;gap:7px;padding:7px 0;border-bottom:1px solid var(--border)}
 .ch:last-child{border-bottom:none}
@@ -182,7 +179,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 }
 .join-sm:hover,.join-sm.on{border-color:var(--red2);color:var(--red2);background:var(--red3);transform:scale(1.05)}
 .join-sm:active{transform:scale(.95)}
-
+ 
 /* spotters */
 .fr{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;border-radius:var(--r);padding:6px 4px}
 .fr:last-child{border-bottom:none}
@@ -206,13 +203,13 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .spot-sm:hover{background:var(--red);border-color:var(--red);color:#fff}
 .spot-sm:active{transform:scale(.93)}
 .spot-sm.on{background:var(--red3);border-color:var(--rb);color:var(--red2)}
-
+ 
 /* ════════════════════════════════════════
    FEED
 ════════════════════════════════════════ */
 .feed-col{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;scroll-behavior:smooth}
 .feed-col::-webkit-scrollbar{width:0}
-
+ 
 /* Compose */
 .compose-box{
   background:rgba(15,15,15,.9);
@@ -269,7 +266,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .post-submit:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(192,57,43,.5)}
 .post-submit:active{transform:scale(.95)}
 .post-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-
+ 
 /* Media preview in composer */
 .media-preview{display:none;margin-top:9px;position:relative;border-radius:var(--r);overflow:hidden;max-height:220px;background:var(--bg3);border:1px solid var(--border2)}
 .media-preview.show{display:block;animation:fadeUp .25s var(--ease)}
@@ -283,14 +280,14 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   transition:all .2s var(--ease);backdrop-filter:blur(4px);
 }
 .media-remove:hover{background:rgba(192,57,43,.9);transform:scale(1.1)}
-
+ 
 /* ─── POST CARD ─── */
 .post-item{
   border-bottom:1px solid var(--border);
   transition:background .15s;
 }
 .post-item:hover{background:rgba(255,255,255,.008)}
-
+ 
 /* Media container — TikTok style for video */
 .post-media-wrap{
   position:relative;background:var(--bg3);overflow:hidden;
@@ -306,7 +303,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   transition:transform .4s var(--ease);
 }
 .post-item:hover .post-image{transform:scale(1.01)}
-
+ 
 /* Video overlay */
 .video-overlay{
   position:absolute;inset:0;
@@ -324,11 +321,11 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 }
 .post-media-wrap:hover .play-circle{transform:scale(1.1)}
 .play-circle i{font-size:22px;color:#fff;margin-left:3px}
-
+ 
 /* Video progress bar */
 .video-progress{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,.15)}
 .video-progress-fill{height:100%;background:var(--red2);width:0%;transition:width .1s linear}
-
+ 
 /* Post body */
 .post-body-wrap{padding:12px 16px}
 .pi-head{display:flex;gap:9px;margin-bottom:9px;align-items:center}
@@ -364,7 +361,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 }
 .pi-stat i{font-size:12px;color:var(--red2)}
 .pi-acts{display:flex;align-items:center;border-top:1px solid var(--border);padding-top:9px;gap:2px}
-
+ 
 /* Action buttons */
 .pi-act{
   background:none;border:none;color:var(--text3);cursor:pointer;
@@ -376,7 +373,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .pi-act:active{transform:scale(.9)}
 .pi-act i{font-size:15px;transition:transform .2s var(--ease)}
 .pi-act:hover i{transform:scale(1.15)}
-
+ 
 /* BRAVO button */
 .bravo-btn{
   background:none;border:none;cursor:pointer;
@@ -397,14 +394,14 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   100%{transform:scale(1) rotate(0deg)}
 }
 .bravo-pop{animation:bravoPop .5s var(--ease)}
-
+ 
 /* Floating bravo particle */
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.5)}}
 .bravo-particle{
   position:fixed;pointer-events:none;font-size:22px;z-index:9999;
   animation:floatUp .8s var(--ease) forwards;
 }
-
+ 
 /* Feed states */
 .feed-loading{text-align:center;padding:40px;color:var(--text3)}
 .feed-empty{text-align:center;padding:60px 20px;color:var(--text3)}
@@ -417,7 +414,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   border-radius:50%;animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-
+ 
 /* ════════════════════════════════════════
    PROFILE MODAL
 ════════════════════════════════════════ */
@@ -488,7 +485,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   transition:all .2s var(--ease);display:flex;align-items:center;justify-content:center;gap:5px;
 }
 .msg-btn:hover{border-color:var(--rb);color:var(--red2);transform:translateY(-1px)}
-
+ 
 /* ════════════════════════════════════════
    PAGES
 ════════════════════════════════════════ */
@@ -500,7 +497,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .page-content{padding:22px;flex:1}
 .page-title{font-family:var(--font-head);font-size:36px;font-weight:900;letter-spacing:1px;margin-bottom:3px}
 .page-sub{font-size:13px;color:var(--text3);margin-bottom:18px}
-
+ 
 /* ════════════════════════════════════════
    EXPLORE
 ════════════════════════════════════════ */
@@ -528,7 +525,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .ex-metas{display:flex;gap:10px}
 .ex-m{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px}
 .ex-m i{font-size:12px;color:var(--red2)}
-
+ 
 /* ════════════════════════════════════════
    GYM MAP — MAPBOX GLOBE
 ════════════════════════════════════════ */
@@ -609,7 +606,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .gym-cta:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(192,57,43,.5)}
 .gym-cta:active{transform:scale(.97)}
 .gym-loading{padding:16px;text-align:center;color:var(--text3);font-size:12px}
-
+ 
 /* Mapbox custom markers */
 .mapbox-gym-marker{
   width:24px;height:24px;border-radius:50%;
@@ -643,7 +640,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   transition:all .2s var(--ease);box-shadow:0 2px 8px rgba(192,57,43,.35);
 }
 .popup-btn:hover{box-shadow:0 4px 12px rgba(192,57,43,.5)}
-
+ 
 /* ════════════════════════════════════════
    LEADERBOARD
 ════════════════════════════════════════ */
@@ -682,7 +679,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .lb-sub2{font-size:10px;color:var(--text3)}
 .lb-score{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--red2);text-align:right}
 .lb-unit2{font-size:9px;color:var(--text3);font-family:var(--font);text-align:right}
-
+ 
 /* ════════════════════════════════════════
    MY PROFILE
 ════════════════════════════════════════ */
@@ -783,7 +780,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 .mpost-nm{font-size:12px;font-weight:500;flex:1;line-height:1.4}
 .mpost-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .mpost-bravos{font-size:11px;color:var(--gold);font-weight:600;flex-shrink:0}
-
+ 
 /* ════════════════════════════════════════
    TOAST
 ════════════════════════════════════════ */
@@ -796,20 +793,20 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
   box-shadow:0 6px 20px rgba(0,0,0,.5);
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
+ 
 /* ════════════════════════════════════════
    UTILITIES
 ════════════════════════════════════════ */
 #media-input,#avatar-input{display:none}
 .sect-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:4px 0}
-
+ 
 /* Ripple effect */
 @keyframes ripple{from{transform:scale(0);opacity:.4}to{transform:scale(4);opacity:0}}
 .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.15);width:40px;height:40px;margin-top:-20px;margin-left:-20px;animation:ripple .6s var(--ease) forwards;pointer-events:none}
 </style>
 </head>
 <body>
-
+ 
 <!-- ════ AUTH ════ -->
 <div id="auth-screen">
   <div class="auth-box">
@@ -833,7 +830,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     <div class="auth-err" id="auth-err"></div>
   </div>
 </div>
-
+ 
 <!-- ════ PROFILE MODAL ════ -->
 <div id="profile-modal" onclick="closeProfileModal(event)">
   <div class="pm-box" onclick="event.stopPropagation()">
@@ -859,10 +856,10 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     </div>
   </div>
 </div>
-
+ 
 <!-- ════ MAIN APP ════ -->
 <div id="main-app" style="display:none;flex-direction:column;height:100%">
-
+ 
 <nav>
   <div class="logo" onclick="showPage('feed',document.querySelector('[data-p=feed]'))">SPOT<span>ME</span></div>
   <button class="nav-btn active" data-p="feed" onclick="showPage('feed',this)"><i class="ti ti-home"></i>Feed</button>
@@ -880,13 +877,13 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
     </div>
   </div>
 </nav>
-
+ 
 <div id="toast"></div>
 <input type="file" id="media-input" accept="image/*,video/*" capture="environment" onchange="handleMediaSelect(event)">
 <input type="file" id="avatar-input" accept="image/*" capture="environment" style="display:none" onchange="handleAvatarUpload(event)">
-
+ 
 <div class="app-body">
-
+ 
   <!-- SIDEBAR -->
   <div class="sidebar" id="main-sidebar">
     <div class="sb-sec">
@@ -898,7 +895,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       <div id="sidebar-friends"><div class="gym-loading"><div class="spinner"></div></div></div>
     </div>
   </div>
-
+ 
   <!-- ════ FEED ════ -->
   <div class="app-page active" id="page-feed">
     <div class="feed-col" id="feed-col">
@@ -929,7 +926,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       <div id="post-list"><div class="feed-loading"><div class="spinner"></div></div></div>
     </div>
   </div>
-
+ 
   <!-- ════ EXPLORE ════ -->
   <div class="app-page-scroll" id="page-explore">
     <div class="page-content">
@@ -947,7 +944,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       <div class="ex-grid" id="ex-grid"></div>
     </div>
   </div>
-
+ 
   <!-- ════ GYM MAP ════ -->
   <div class="app-page" id="page-gyms">
     <div class="map-layout">
@@ -973,7 +970,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       </div>
     </div>
   </div>
-
+ 
   <!-- ════ LEADERBOARD ════ -->
   <div class="app-page-scroll" id="page-leaderboard">
     <div class="page-content">
@@ -986,7 +983,7 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       <div class="lb-box" id="lb-list"></div>
     </div>
   </div>
-
+ 
   <!-- ════ MY PROFILE ════ -->
   <div class="app-page-scroll" id="page-myprofile">
     <div class="page-content">
@@ -1034,10 +1031,10 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
       </div>
     </div>
   </div>
-
+ 
 </div><!-- app-body -->
 </div><!-- main-app -->
-
+ 
 <script>
 'use strict';
 // ════════════════════════════════════════
@@ -1046,22 +1043,22 @@ nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;backg
 const SURL='https://ifdiogpvobpewwnabwam.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZGlvZ3B2b2JwZXd3bmFid2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTA1MzIsImV4cCI6MjA5NTc2NjUzMn0.Za0ogVjqAusmTy2sHFnrbdi5XCjSKgIat78laSj3TNY';
 const sb=supabase.createClient(SURL,SKEY);
-
+ 
 // Foursquare — free tier, no billing needed
 // Get yours free at developer.foursquare.com
 const FSQ_KEY='fsq3placeholder'; // Replace with your free key from developer.foursquare.com
-
+ 
 // Mapbox — free tier 50K loads/month
 // Get yours free at account.mapbox.com
 const MAPBOX_TOKEN='pk.eyJ1Ijoic3BvdG1lLWFwcCIsImEiOiJjaHJsZjlrNGgwMDU4MnFzNjFqNHpkNmUifQ.placeholder';
-
+ 
 let currentUser=null,currentProfile=null;
 let selectedTag='',mediaFile=null,mediaType=null;
 let mapInited=false,mapboxMap=null;
 let activeMarkers=[],activePopup=null;
 let selectedGymId=null,lbPeriod='week',exFilter='all';
 let viewingProfile=null;
-
+ 
 // ════════════════════════════════════════
 // AUTH
 // ════════════════════════════════════════
@@ -1140,7 +1137,7 @@ function showApp(){
   document.getElementById('main-app').style.display='flex';
   loadFeed();loadChallenges();loadSuggestedSpotters();renderExplore();renderLb();loadMyPosts();
 }
-
+ 
 // ════════════════════════════════════════
 // TOAST & RIPPLE
 // ════════════════════════════════════════
@@ -1157,7 +1154,7 @@ function ripple(el,e){
   el.style.position='relative';el.style.overflow='hidden';
   el.appendChild(r);setTimeout(()=>r.remove(),700);
 }
-
+ 
 // ════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════
@@ -1175,7 +1172,7 @@ document.addEventListener('click',e=>{
   const m=document.getElementById('nav-av-menu');
   if(m&&!document.getElementById('nav-av').contains(e.target))m.classList.remove('show');
 });
-
+ 
 // ════════════════════════════════════════
 // MEDIA HANDLING
 // ════════════════════════════════════════
@@ -1210,7 +1207,7 @@ async function handleAvatarUpload(e){
   currentProfile.avatar_url=publicUrl;
   updateMyUI();toast('Profile photo updated! 📸');
 }
-
+ 
 // ════════════════════════════════════════
 // SAVE PROFILE
 // ════════════════════════════════════════
@@ -1223,7 +1220,7 @@ async function saveProfile(){
   if(currentProfile){currentProfile.bio=bio;currentProfile.gym_name=gym;}
   toast('Profile saved! ✅');
 }
-
+ 
 // ════════════════════════════════════════
 // FEED
 // ════════════════════════════════════════
@@ -1247,8 +1244,8 @@ async function loadFeed(){
   document.getElementById('post-list').innerHTML=posts.map(p=>renderPostHTML(p,bravoSet.has(p.id))).join('');
   initVideoPlayers();
 }
-
-function renderPostHTML(p,bravo'd=false){
+ 
+function renderPostHTML(p,bravod=false){
   const pr=p.profiles||{};
   const name=pr.full_name||pr.username||'SpotMe User';
   const time=formatTime(p.created_at);
@@ -1277,7 +1274,7 @@ function renderPostHTML(p,bravo'd=false){
       mediaHTML=`<div class="post-media-wrap"><img class="post-image" src="${p.media_url}" alt="Post image" loading="lazy"></div>`;
     }
   }
-  const bravoActive=bravo'd;
+  const bravoActive=bravod;
   return `<div class="post-item" id="post-${p.id}">
     ${mediaHTML}
     <div class="post-body-wrap">
@@ -1304,7 +1301,7 @@ function renderPostHTML(p,bravo'd=false){
     </div>
   </div>`;
 }
-
+ 
 function initVideoPlayers(){
   document.querySelectorAll('.post-video').forEach(vid=>{
     vid.addEventListener('timeupdate',()=>{
@@ -1330,7 +1327,7 @@ function initVideoPlayers(){
   },{threshold:0.5});
   document.querySelectorAll('.post-video').forEach(v=>obs.observe(v));
 }
-
+ 
 function toggleVideo(postId){
   const vid=document.getElementById('vid-'+postId);
   const ov=document.getElementById('vov-'+postId);
@@ -1343,7 +1340,7 @@ function toggleVideo(postId){
     if(ov)ov.classList.remove('hidden');
   }
 }
-
+ 
 function autoResize(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,160)+'px'}
 function formatTime(ts){const d=(Date.now()-new Date(ts))/1000;if(d<60)return'now';if(d<3600)return Math.floor(d/60)+'m';if(d<86400)return Math.floor(d/3600)+'h';if(d<604800)return Math.floor(d/86400)+'d';return new Date(ts).toLocaleDateString();}
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
@@ -1351,7 +1348,7 @@ function sharePost(id){
   if(navigator.share){navigator.share({title:'SpotMe Post',url:window.location.href});}
   else{navigator.clipboard?.writeText(window.location.href);toast('Link copied!');}
 }
-
+ 
 // ════════════════════════════════════════
 // BRAVO
 // ════════════════════════════════════════
@@ -1387,7 +1384,7 @@ function spawnBravoParticle(event){
   document.body.appendChild(p);
   setTimeout(()=>p.remove(),900);
 }
-
+ 
 // ════════════════════════════════════════
 // PROFILE MODAL
 // ════════════════════════════════════════
@@ -1439,7 +1436,7 @@ async function spotUser(){
     toast('Now spotting '+viewingProfile.name+'! 👀');
   }
 }
-
+ 
 // ════════════════════════════════════════
 // SUBMIT POST
 // ════════════════════════════════════════
@@ -1490,7 +1487,7 @@ async function submitPost(){
   toast('Posted! 💪');
   loadFeed();loadMyPosts();
 }
-
+ 
 // ════════════════════════════════════════
 // MY POSTS
 // ════════════════════════════════════════
@@ -1513,7 +1510,7 @@ async function loadMyPosts(){
     </div>`;
   }).join('');
 }
-
+ 
 // ════════════════════════════════════════
 // CHALLENGES
 // ════════════════════════════════════════
@@ -1545,7 +1542,7 @@ async function joinCh(id,btn){
     toast('Left challenge');
   }
 }
-
+ 
 // ════════════════════════════════════════
 // SUGGESTED SPOTTERS
 // ════════════════════════════════════════
@@ -1573,7 +1570,7 @@ async function quickSpot(uid,btn){
   if(!on){await sb.from('follows').upsert({follower_id:currentUser.id,following_id:uid});toast('Spotting! 👀');}
   else{await sb.from('follows').delete().eq('follower_id',currentUser.id).eq('following_id',uid);}
 }
-
+ 
 // ════════════════════════════════════════
 // EXPLORE
 // ════════════════════════════════════════
@@ -1608,7 +1605,7 @@ function filterEx(f,btn){
   btn.classList.add('on');
   renderExplore();
 }
-
+ 
 // ════════════════════════════════════════
 // LEADERBOARD
 // ════════════════════════════════════════
@@ -1635,21 +1632,21 @@ function setLb(p,btn){
   document.querySelectorAll('.lb-p').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');renderLb();
 }
-
+ 
 // ════════════════════════════════════════
 // GYM MAP — MAPBOX GLOBE + FOURSQUARE
 // ════════════════════════════════════════
 function initMap(){
   if(mapInited)return;
   mapInited=true;
-
+ 
   // Use your Mapbox token here
   mapboxgl.accessToken=MAPBOX_TOKEN;
-
+ 
   // Check if we have a real token
   const hasRealToken = MAPBOX_TOKEN && !MAPBOX_TOKEN.includes('placeholder');
   const hasFSQKey = FSQ_KEY && !FSQ_KEY.includes('placeholder');
-
+ 
   if(!hasRealToken){
     // Show setup instructions
     document.getElementById('gym-map').innerHTML=`
@@ -1679,7 +1676,7 @@ function initMap(){
     document.getElementById('gym-list').innerHTML='<div class="gym-loading">Add your API keys to enable the gym map</div>';
     return;
   }
-
+ 
   try{
     mapboxMap=new mapboxgl.Map({
       container:'gym-map',
@@ -1689,14 +1686,14 @@ function initMap(){
       center:[0,20],
       antialias:true,
     });
-
+ 
     mapboxMap.addControl(new mapboxgl.NavigationControl({showCompass:false}),'top-left');
     mapboxMap.addControl(new mapboxgl.GeolocateControl({
       positionOptions:{enableHighAccuracy:true},
       trackUserLocation:false,
       showAccuracyCircle:false,
     }),'top-left');
-
+ 
     // Globe atmosphere
     mapboxMap.on('style.load',()=>{
       mapboxMap.setFog({
@@ -1707,12 +1704,12 @@ function initMap(){
         'star-intensity':0.8,
       });
     });
-
+ 
     mapboxMap.on('moveend',()=>{
       const zoom=mapboxMap.getZoom();
       if(zoom>=10)loadFSQGyms();
     });
-
+ 
     mapboxMap.on('load',()=>{
       document.getElementById('gym-list').innerHTML=`<div class="gym-loading"><div style="font-size:32px;margin-bottom:8px">🌍</div><div>Zoom into any city to discover real gyms</div><div style="margin-top:4px;font-size:10px;color:var(--text3)">Powered by Foursquare · 100M+ locations worldwide</div></div>`;
     });
@@ -1720,7 +1717,7 @@ function initMap(){
     document.getElementById('gym-map').innerHTML=`<div style="height:100%;display:flex;align-items:center;justify-content:center;background:#0a0a0a;color:#666;font-size:13px;flex-direction:column;gap:8px"><i class="ti ti-map-off" style="font-size:32px;color:#333"></i>Map failed to load: ${err.message}</div>`;
   }
 }
-
+ 
 async function loadFSQGyms(){
   const hasFSQKey = FSQ_KEY && !FSQ_KEY.includes('placeholder');
   if(!hasFSQKey){return;}
@@ -1771,7 +1768,7 @@ async function loadFSQGyms(){
     document.getElementById('gym-list').innerHTML=`<div class="gym-loading">Error loading gyms.<br><small>${err.message}</small></div>`;
   }
 }
-
+ 
 function renderGymPanel(places,lat,lng){
   if(!places||places.length===0){
     document.getElementById('gym-list').innerHTML='<div class="gym-loading">No gyms found in this area</div>';return;
@@ -1787,18 +1784,18 @@ function renderGymPanel(places,lat,lng){
     </div>`;
   }).join('');
 }
-
+ 
 function selectGymFromPanel(id,name,addr){
   document.querySelectorAll('.gym-item').forEach(el=>el.classList.remove('sel'));
   const el=document.getElementById('gi-'+id);if(el){el.classList.add('sel');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
   showGymDetail(id,name,addr);
 }
-
+ 
 function selectGymFromPopup(id,name,addr){
   if(activePopup)activePopup.remove();
   selectGymFromPanel(id,name,addr);
 }
-
+ 
 async function showGymDetail(id,name,addr){
   const detail=document.getElementById('gym-detail');
   // Load SpotMe members who checked in here
@@ -1824,9 +1821,9 @@ async function showGymDetail(id,name,addr){
   `;
   detail.classList.add('show');
 }
-
+ 
 function closeGymDetail(){document.getElementById('gym-detail').classList.remove('show');}
-
+ 
 async function checkInGym(gymName){
   if(!currentUser){toast('Sign in to check in');return}
   const{error}=await sb.from('profiles').update({gym_name:gymName}).eq('id',currentUser.id);
@@ -1837,7 +1834,7 @@ async function checkInGym(gymName){
   // Refresh detail
   showGymDetail(selectedGymId||'',gymName,'');
 }
-
+ 
 async function searchGyms(q){
   if(!q||q.length<2)return;
   const hasFSQKey=FSQ_KEY&&!FSQ_KEY.includes('placeholder');
@@ -1855,7 +1852,7 @@ async function searchGyms(q){
     } else {toast('Location not found');}
   }catch(err){toast('Search error: '+err.message);}
 }
-
+ 
 async function locateMe(){
   const hasRealToken=MAPBOX_TOKEN&&!MAPBOX_TOKEN.includes('placeholder');
   if(!hasRealToken){toast('Add your Mapbox key first!');return}
@@ -1867,7 +1864,7 @@ async function locateMe(){
     setTimeout(loadFSQGyms,1700);
   },err=>toast('Location denied: '+err.message),{enableHighAccuracy:true,timeout:8000});
 }
-
+ 
 // ════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════
@@ -1875,5 +1872,4 @@ checkAuth();
 </script>
 </body>
 </html>
-HTMLEOF
-echo "Done — $(wc -l < /mnt/user-data/outputs/index.html) lines"
+ 
