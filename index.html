@@ -1064,7 +1064,20 @@ let viewingProfile=null;
 // ════════════════════════════════════════
 async function checkAuth(){
   const{data:{session}}=await sb.auth.getSession();
-  if(session){currentUser=session.user;await loadProfile();showApp();}
+  if(session){
+    currentUser=session.user;
+    await loadProfile();
+    showApp();
+  }
+  // Listen for auth state changes (e.g. email confirmation callback)
+  sb.auth.onAuthStateChange(async(event,sess)=>{
+    if(event==='SIGNED_IN'&&sess&&!currentUser){
+      currentUser=sess.user;
+      await loadProfile();
+      showApp();
+    }
+    if(event==='SIGNED_OUT'){location.reload();}
+  });
 }
 function switchTab(t){
   document.getElementById('login-form').style.display=t==='login'?'block':'none';
@@ -1072,14 +1085,25 @@ function switchTab(t){
   document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('on',(i===0&&t==='login')||(i===1&&t==='signup')));
   setErr('');
 }
-function setErr(m){document.getElementById('auth-err').textContent=m}
+function setErr(m){const el=document.getElementById('auth-err');el.style.color='var(--red2)';el.textContent=m;}
 async function signIn(){
   const email=document.getElementById('li-email').value.trim(),pw=document.getElementById('li-pw').value;
   if(!email||!pw){setErr('Please fill in all fields.');return}
-  setErr('Signing in...');
+  const btn=document.querySelector('#login-form .auth-btn');
+  if(btn){btn.disabled=true;btn.textContent='Signing in...';}
+  setErr('');
   const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
-  if(error){setErr(error.message);return}
-  currentUser=data.user;await loadProfile();showApp();
+  if(btn){btn.disabled=false;btn.textContent='Sign In';}
+  if(error){
+    if(error.message.toLowerCase().includes('email not confirmed'))
+      setErr('Please confirm your email before signing in. Check your inbox.');
+    else
+      setErr(error.message);
+    return;
+  }
+  currentUser=data.user;
+  await loadProfile();
+  showApp();
 }
 async function signUp(){
   const name=document.getElementById('su-name').value.trim(),
@@ -1087,16 +1111,41 @@ async function signUp(){
         pw=document.getElementById('su-pw').value;
   if(!name||!email||!pw){setErr('Please fill in all fields.');return}
   if(pw.length<6){setErr('Password must be 6+ characters.');return}
-  setErr('Creating your account...');
+  const btn=document.querySelector('#signup-form .auth-btn');
+  if(btn){btn.disabled=true;btn.textContent='Creating account...';}
+  setErr('');
   const{data,error}=await sb.auth.signUp({email,password:pw,options:{data:{full_name:name}}});
+  if(btn){btn.disabled=false;btn.textContent='Create Account';}
   if(error){setErr(error.message);return}
-  currentUser=data.user;await loadProfile();showApp();toast('Welcome to SpotMe! 🎉');
+  // If email confirmation is required, session will be null
+  if(!data.session){
+    setErr('');
+    document.getElementById('auth-err').style.color='var(--text2)';
+    document.getElementById('auth-err').textContent='Account created! Check your email to confirm, then sign in.';
+    switchTab('login');
+    document.getElementById('li-email').value=email;
+    return;
+  }
+  currentUser=data.user;
+  await loadProfile();
+  showApp();
+  toast('Welcome to SpotMe!');
 }
 async function signOut(){await sb.auth.signOut();location.reload();}
 async function loadProfile(){
   if(!currentUser)return;
-  const{data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
-  currentProfile=data;
+  const{data,error}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  if(error||!data){
+    // Profile row missing — create it (trigger may not have run)
+    const username=(currentUser.email||'user').split('@')[0].replace(/[^a-z0-9_]/gi,'').toLowerCase()||'user'+Date.now();
+    const name=currentUser.user_metadata?.full_name||username;
+    const{data:newProfile}=await sb.from('profiles').upsert({
+      id:currentUser.id,username,full_name:name
+    },{onConflict:'id'}).select().single();
+    currentProfile=newProfile;
+  } else {
+    currentProfile=data;
+  }
   updateMyUI();
 }
 function getInitials(name){return(name||'User').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
