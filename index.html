@@ -1717,7 +1717,7 @@ function initMap(){
       subdomains:'abcd',maxZoom:19,
     }).addTo(leafMap);
     // Auto-search when user stops panning at zoom ≥ 12
-    leafMap.on('moveend',()=>{if(leafMap.getZoom()>=12)loadOSMGyms();});
+    leafMap.on('moveend',()=>{if(leafMap.getZoom()>=12)async function loadOSMGyms(){();});
     document.getElementById('gym-list').innerHTML=`<div class="gym-loading">
       <div style="font-size:28px;margin-bottom:8px">🌍</div>
       <div>Zoom in or search a city to find gyms</div>
