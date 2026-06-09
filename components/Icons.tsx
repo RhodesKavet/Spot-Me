@@ -1,10 +1,10 @@
-import React from 'react'
+import type { CSSProperties } from 'react'
 
 interface P {
   size?: number
   className?: string
   filled?: boolean
-  style?: React.CSSProperties
+  style?: CSSProperties
 }
 
 export function BarbellIcon({ size = 24, className = '', filled = false, style }: P) {
