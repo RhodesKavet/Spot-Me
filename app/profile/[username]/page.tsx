@@ -8,74 +8,74 @@ import { supabase } from '@/lib/supabase'
 import { Profile, Post } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
 import UploadModal from '@/components/UploadModal'
+import Logo from '@/components/Logo'
 
-const WORKOUT_TAGS_ICONS: Record<string, string> = {
-  Chest: '🔴', Back: '🔵', Legs: '🟢', Shoulders: '🟡',
-  Arms: '🟠', Core: '🩵', Cardio: '🟣', 'Full Body': '🩷', General: '⚪',
-}
+type Tab = 'posts' | 'saved' | 'liked'
 
 export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>()
   const router = useRouter()
 
-  const [profile, setProfile]       = useState<Profile | null>(null)
-  const [posts, setPosts]           = useState<Post[]>([])
-  const [currentUser, setCurrentUser] = useState<Profile | null>(null)
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [profile, setProfile]           = useState<Profile | null>(null)
+  const [viewer, setViewer]             = useState<Profile | null>(null)
+  const [posts, setPosts]               = useState<Post[]>([])
+  const [savedPosts, setSavedPosts]     = useState<Post[]>([])
+  const [likedPosts, setLikedPosts]     = useState<Post[]>([])
+  const [tab, setTab]                   = useState<Tab>('posts')
+  const [tabLoaded, setTabLoaded]       = useState<Set<Tab>>(new Set(['posts']))
+  const [isFollowing, setIsFollowing]   = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
-  const [postCount, setPostCount]   = useState(0)
-  const [loading, setLoading]       = useState(true)
-  const [followLoading, setFollowLoading] = useState(false)
-  const [showUpload, setShowUpload] = useState(false)
+  const [loading, setLoading]           = useState(true)
+  const [editMode, setEditMode]         = useState(false)
+  const [editBio, setEditBio]           = useState('')
+  const [editName, setEditName]         = useState('')
+  const [saving, setSaving]             = useState(false)
+  const [uploading, setUploading]       = useState(false)
+  const [gymName, setGymName]           = useState<string | null>(null)
+  const [showUpload, setShowUpload]     = useState(false)
+  const [spottersModal, setSpottersModal] = useState<'spotters' | 'spotting' | null>(null)
+  const [spottersList, setSpottersList] = useState<Profile[]>([])
+  const [spottingList, setSpottingList] = useState<Profile[]>([])
+  const avatarRef = useRef<HTMLInputElement>(null)
 
-  // Edit state
-  const [editMode, setEditMode]     = useState(false)
-  const [editBio, setEditBio]       = useState('')
-  const [editName, setEditName]     = useState('')
-  const [saving, setSaving]         = useState(false)
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-
-  const isOwn = currentUser?.username === username
+  const isOwn = viewer?.username === username
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.replace('/auth'); return }
 
-    const [
-      { data: me },
-      { data: prof },
-    ] = await Promise.all([
+    const [{ data: me }, { data: prof }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', session.user.id).single(),
       supabase.from('profiles').select('*').eq('username', username).single(),
     ])
 
     if (!prof) { router.replace('/feed'); return }
-
-    setCurrentUser(me)
+    setViewer(me)
     setProfile(prof)
+    setEditBio(prof.bio || '')
+    setEditName(prof.full_name || '')
 
-    const [
-      { data: userPosts },
-      { count: followers },
-      { count: following },
-      { count: pcount },
-    ] = await Promise.all([
+    // Posts + stats
+    const [{ data: postsData }, { count: fwrs }, { count: fwng }] = await Promise.all([
       supabase.from('posts').select('*').eq('user_id', prof.id).order('created_at', { ascending: false }),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', prof.id),
-      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', prof.id),
     ])
+    setPosts((postsData as Post[]) || [])
+    setFollowerCount(fwrs || 0)
+    setFollowingCount(fwng || 0)
 
-    setPosts((userPosts as Post[]) || [])
-    setFollowerCount(followers || 0)
-    setFollowingCount(following || 0)
-    setPostCount(pcount || 0)
-
+    // Follow status
     if (me && me.id !== prof.id) {
-      const { data: followData } = await supabase.from('follows').select('id')
-        .eq('follower_id', me.id).eq('following_id', prof.id).maybeSingle()
-      setIsFollowing(!!followData)
+      const { data: f } = await supabase.from('follows').select('id').eq('follower_id', me.id).eq('following_id', prof.id).maybeSingle()
+      setIsFollowing(!!f)
+    }
+
+    // Gym name
+    if (prof.gym_id) {
+      const { data: gym } = await supabase.from('gyms').select('name').eq('id', prof.gym_id).single()
+      setGymName(gym?.name || null)
     }
 
     setLoading(false)
@@ -83,231 +83,289 @@ export default function UserProfilePage() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  const toggleFollow = async () => {
-    if (!currentUser || !profile || isOwn) return
-    setFollowLoading(true)
-    if (isFollowing) {
-      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', profile.id)
-      setIsFollowing(false); setFollowerCount(c => c - 1)
-    } else {
-      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: profile.id })
-      setIsFollowing(true); setFollowerCount(c => c + 1)
+  // Lazy load saved / liked tabs
+  const loadTab = useCallback(async (t: Tab) => {
+    if (!profile || tabLoaded.has(t)) return
+    setTabLoaded(prev => new Set([...prev, t]))
+    if (t === 'saved') {
+      const { data } = await supabase.from('saves').select('posts(*)').eq('user_id', profile.id).order('created_at', { ascending: false })
+      setSavedPosts(((data || []) as any[]).map(r => r.posts).filter(Boolean))
     }
-    setFollowLoading(false)
+    if (t === 'liked') {
+      const { data } = await supabase.from('likes').select('posts(*)').eq('user_id', profile.id).order('created_at', { ascending: false })
+      setLikedPosts(((data || []) as any[]).map(r => r.posts).filter(Boolean))
+    }
+  }, [profile, tabLoaded])
+
+  useEffect(() => { if (tab !== 'posts') loadTab(tab) }, [tab, loadTab])
+
+  const loadSpotters = async () => {
+    if (!profile) return
+    const { data } = await supabase.from('follows').select('profiles!follows_follower_id_fkey(*)').eq('following_id', profile.id)
+    setSpottersList(((data || []) as any[]).map(r => r.profiles).filter(Boolean))
+  }
+  const loadSpotting = async () => {
+    if (!profile) return
+    const { data } = await supabase.from('follows').select('profiles!follows_following_id_fkey(*)').eq('follower_id', profile.id)
+    setSpottingList(((data || []) as any[]).map(r => r.profiles).filter(Boolean))
+  }
+
+  const toggleFollow = async () => {
+    if (!viewer || !profile || isOwn) return
+    if (isFollowing) {
+      setIsFollowing(false); setFollowerCount(c => Math.max(0, c - 1))
+      await supabase.from('follows').delete().eq('follower_id', viewer.id).eq('following_id', profile.id)
+    } else {
+      setIsFollowing(true); setFollowerCount(c => c + 1)
+      await supabase.from('follows').insert({ follower_id: viewer.id, following_id: profile.id })
+    }
   }
 
   const saveEdit = async () => {
-    if (!currentUser) return
+    if (!viewer) return
     setSaving(true)
-    await supabase.from('profiles').update({ bio: editBio, full_name: editName }).eq('id', currentUser.id)
-    setProfile(p => p ? { ...p, bio: editBio, full_name: editName } : p)
+    const { data } = await supabase.from('profiles').update({ bio: editBio, full_name: editName }).eq('id', viewer.id).select().single()
+    if (data) setProfile(data as Profile)
     setSaving(false); setEditMode(false)
   }
 
   const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !currentUser) return
-    const ext = file.name.split('.').pop() || 'jpg'
-    const path = `${currentUser.id}/avatar.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-    if (error) return
+    if (!file || !viewer) return
+    setUploading(true)
+    const ext  = file.name.split('.').pop() || 'jpg'
+    const path = `${viewer.id}/avatar.${ext}`
+    await supabase.storage.from('avatars').upload(path, file, { upsert: true })
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id)
-    setProfile(p => p ? { ...p, avatar_url: publicUrl } : p)
+    const url = publicUrl + `?t=${Date.now()}`
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', viewer.id)
+    setProfile(p => p ? { ...p, avatar_url: url } : p)
+    setUploading(false)
   }
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    router.replace('/auth')
-  }
-
-  if (loading) {
-    return (
-      <div className="h-svh flex items-center justify-center bg-bg-1">
-        <div className="w-7 h-7 border-2 border-red-p border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
+  if (loading) return (
+    <div className="h-svh flex items-center justify-center bg-bg-1">
+      <span className="text-4xl animate-bounce">🏋️</span>
+    </div>
+  )
   if (!profile) return null
+
+  const displayPosts = tab === 'posts' ? posts : tab === 'saved' ? savedPosts : likedPosts
 
   return (
     <div className="min-h-svh bg-bg-1 pb-20">
-      {/* ── Header gradient ── */}
-      <div className="h-32 bg-gradient-to-br from-red-p/30 via-bg-4 to-bg-1 relative">
-        {/* Back button (if not own) */}
-        {!isOwn && (
-          <button onClick={() => router.back()} className="absolute top-4 left-4 bg-bg-4/80 backdrop-blur-sm border border-bdr-2 rounded-full w-9 h-9 flex items-center justify-center text-txt-1 text-sm">
-            ←
-          </button>
-        )}
-        {/* Sign out (own profile) */}
-        {isOwn && (
-          <button onClick={signOut} className="absolute top-4 right-4 bg-bg-4/80 backdrop-blur-sm border border-bdr-2 rounded-xl px-3 py-1.5 text-txt-2 text-xs font-head font-bold">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 glass sticky top-0 z-20">
+        <button onClick={() => router.back()} className="text-txt-2 p-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <Logo size="sm" />
+        {isOwn ? (
+          <button onClick={() => supabase.auth.signOut().then(() => router.replace('/auth'))}
+            className="text-xs font-head font-bold text-txt-3 hover:text-red-b transition-colors uppercase tracking-wider">
             Sign Out
           </button>
-        )}
+        ) : <div className="w-12" />}
       </div>
 
-      {/* ── Avatar ── */}
-      <div className="px-5 -mt-14 mb-3 flex items-end justify-between">
-        <div
-          className={`relative ${isOwn ? 'cursor-pointer' : ''}`}
-          onClick={() => isOwn && avatarInputRef.current?.click()}
-        >
-          <div className="w-24 h-24 rounded-full border-4 border-bg-1 bg-bg-4 overflow-hidden shadow-xl">
-            {profile.avatar_url ? (
-              <Image src={profile.avatar_url} alt={profile.username} width={96} height={96} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-head font-bold text-4xl text-white bg-red-p">
-                {profile.username.charAt(0).toUpperCase()}
-              </div>
+      {/* Hero */}
+      <div className="relative px-4 pt-8 pb-4">
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-red-p/25 to-transparent pointer-events-none" />
+
+        <div className="relative flex items-end gap-4 mb-5">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div className="w-[82px] h-[82px] rounded-full overflow-hidden bg-bg-4"
+              style={{ boxShadow: '0 0 0 3px #c0392b, 0 0 20px rgba(192,57,43,.4)' }}>
+              {profile.avatar_url ? (
+                <Image src={profile.avatar_url} alt={profile.username} width={82} height={82} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-head font-bold text-3xl text-white bg-gradient-to-br from-red-p to-red-b">
+                  {profile.username.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            {isOwn && (
+              <button onClick={() => avatarRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-red-p flex items-center justify-center text-xs border-2 border-bg-1">
+                {uploading ? '⏳' : '📷'}
+              </button>
             )}
           </div>
-          {isOwn && (
-            <div className="absolute bottom-0 right-0 w-7 h-7 bg-red-p rounded-full flex items-center justify-center text-white text-xs border-2 border-bg-1">
-              📷
-            </div>
+          <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
+
+          {/* Name / username / gym */}
+          <div className="flex-1 min-w-0 pb-1">
+            {editMode ? (
+              <input value={editName} onChange={e => setEditName(e.target.value)} className="input-dark text-base mb-1 py-2" placeholder="Display name" />
+            ) : (
+              <h1 className="font-head font-bold text-xl text-txt-1 leading-tight truncate">
+                {profile.full_name || profile.username}
+              </h1>
+            )}
+            <p className="text-txt-3 text-sm">@{profile.username}</p>
+            {gymName && (
+              <p className="text-[11px] text-txt-3 mt-1 flex items-center gap-1">
+                🏋️‍♂️ <span className="text-red-b/80 font-head font-bold">{gymName}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Action button */}
+          {isOwn ? (
+            editMode ? (
+              <div className="flex gap-2 pb-1">
+                <button onClick={saveEdit} disabled={saving}
+                  className="px-4 py-2 rounded-xl bg-red-p text-white text-sm font-head font-bold disabled:opacity-50">
+                  {saving ? '…' : 'Save'}
+                </button>
+                <button onClick={() => setEditMode(false)}
+                  className="px-3 py-2 rounded-xl glass border border-bdr-1 text-sm text-txt-2">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setEditMode(true)}
+                className="pb-1 px-4 py-2 rounded-xl glass border border-bdr-1 text-sm font-head font-bold text-txt-2 hover:text-txt-1 transition-colors">
+                Edit
+              </button>
+            )
+          ) : (
+            <button onClick={toggleFollow}
+              className={`pb-1 px-5 py-2 rounded-xl text-sm font-head font-bold transition-all ${
+                isFollowing ? 'glass border border-bdr-1 text-txt-2' : 'bg-gradient-to-r from-red-p to-red-b text-white glow-red-sm'
+              }`}>
+              {isFollowing ? 'Spotting ✓' : 'Spot Them'}
+            </button>
           )}
         </div>
 
-        {/* Action button */}
-        {isOwn ? (
-          <div className="flex gap-2 mt-14">
-            <button
-              onClick={() => { setEditMode(true); setEditBio(profile.bio || ''); setEditName(profile.full_name || '') }}
-              className="px-4 py-2 bg-bg-4 border border-bdr-2 rounded-xl text-txt-1 text-sm font-head font-bold hover:border-bdr-3 transition-colors"
-            >
-              Edit Profile
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={toggleFollow}
-            disabled={followLoading}
-            className={`mt-14 px-6 py-2 rounded-xl text-sm font-head font-bold transition-all active:scale-95 disabled:opacity-60 ${
-              isFollowing
-                ? 'bg-bg-4 border border-bdr-2 text-txt-1'
-                : 'bg-red-p text-white hover:bg-red-b'
-            }`}
-          >
-            {isFollowing ? 'Spotting ✓' : 'Spot Them'}
-          </button>
-        )}
-      </div>
-
-      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
-
-      {/* ── Profile info ── */}
-      <div className="px-5 mb-4">
+        {/* Bio */}
         {editMode ? (
-          <div className="space-y-3">
-            <input
-              value={editName}
-              onChange={e => setEditName(e.target.value)}
-              placeholder="Full Name"
-              className="w-full bg-bg-3 border border-bdr-2 rounded-xl px-4 py-2.5 text-txt-1 text-sm outline-none focus:border-red-p"
-            />
-            <textarea
-              value={editBio}
-              onChange={e => setEditBio(e.target.value)}
-              placeholder="Bio — tell your story…"
-              rows={3}
-              className="w-full bg-bg-3 border border-bdr-2 rounded-xl px-4 py-2.5 text-txt-1 text-sm outline-none focus:border-red-p resize-none"
-            />
-            <div className="flex gap-2">
-              <button onClick={saveEdit} disabled={saving}
-                className="flex-1 bg-red-p text-white font-head font-bold py-2 rounded-xl text-sm">
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button onClick={() => setEditMode(false)}
-                className="flex-1 bg-bg-4 border border-bdr-2 text-txt-1 font-head font-bold py-2 rounded-xl text-sm">
-                Cancel
-              </button>
-            </div>
+          <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3}
+            placeholder="Bio — tell your story…" className="input-dark text-sm resize-none mb-4 py-3" />
+        ) : profile.bio ? (
+          <p className="text-txt-2 text-sm mb-4 leading-relaxed">{profile.bio}</p>
+        ) : null}
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center py-3 glass rounded-xl border border-bdr-1">
+            <p className="font-head font-bold text-lg text-txt-1">{posts.length}</p>
+            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Posts</p>
           </div>
-        ) : (
-          <>
-            <h1 className="font-head font-bold text-txt-1 text-xl leading-tight">
-              {profile.full_name || profile.username}
-            </h1>
-            <p className="text-txt-2 text-sm">@{profile.username}</p>
-            {profile.bio && (
-              <p className="text-txt-1 text-sm mt-2 leading-relaxed">{profile.bio}</p>
-            )}
-            {profile.points > 0 && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-gold text-sm">⭐</span>
-                <span className="text-gold font-head font-bold text-sm">{profile.points.toLocaleString()} pts</span>
-              </div>
-            )}
-          </>
-        )}
+          <button onClick={() => { setSpottersModal('spotters'); loadSpotters() }}
+            className="text-center py-3 glass rounded-xl border border-bdr-1 active:scale-95 transition-transform">
+            <p className="font-head font-bold text-lg text-txt-1">{followerCount}</p>
+            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Spotters</p>
+          </button>
+          <button onClick={() => { setSpottersModal('spotting'); loadSpotting() }}
+            className="text-center py-3 glass rounded-xl border border-bdr-1 active:scale-95 transition-transform">
+            <p className="font-head font-bold text-lg text-txt-1">{followingCount}</p>
+            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Spotting</p>
+          </button>
+        </div>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="mx-5 mb-4 bg-bg-3 border border-bdr-1 rounded-2xl grid grid-cols-3 divide-x divide-bdr-1">
-        {[
-          { label: 'Posts', value: postCount },
-          { label: 'Spotters', value: followerCount },
-          { label: 'Spotting', value: followingCount },
-        ].map(({ label, value }) => (
-          <div key={label} className="flex flex-col items-center py-4 gap-1">
-            <span className="font-head font-bold text-xl text-txt-1">{value.toLocaleString()}</span>
-            <span className="text-xs text-txt-2 font-head uppercase tracking-wide">{label}</span>
-          </div>
+      {/* Tabs */}
+      <div className="flex border-b border-bdr-1 sticky top-[57px] bg-bg-1 z-10">
+        {(['posts', 'saved', 'liked'] as Tab[]).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`flex-1 py-3 text-xs font-head font-bold uppercase tracking-wider transition-colors relative ${
+              tab === t ? 'text-red-b' : 'text-txt-3'
+            }`}>
+            {t === 'posts' ? '▦ Posts' : t === 'saved' ? '🔖 Saved' : '🏋️ Liked'}
+            {tab === t && <span className="tab-active-indicator" />}
+          </button>
         ))}
       </div>
 
-      {/* ── Post grid ── */}
-      {posts.length > 0 ? (
-        <div className="px-1 grid grid-cols-3 gap-0.5">
-          {posts.map(post => (
-            <div key={post.id} className="aspect-square relative bg-bg-4 overflow-hidden">
-              {post.media_url && post.media_type === 'image' && (
-                <Image src={post.media_url} alt={post.body} fill className="object-cover" />
-              )}
-              {post.media_url && post.media_type === 'video' && (
-                <video src={post.media_url} className="w-full h-full object-cover" />
-              )}
-              {(!post.media_url || post.media_type === 'text') && (
-                <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-to-br from-bg-5 to-bg-3">
-                  <p className="text-txt-1 text-xs text-center leading-tight font-head font-bold line-clamp-4">
-                    {post.body}
-                  </p>
-                </div>
-              )}
-              {/* Tag badge */}
-              {post.tag && (
-                <div className="absolute top-1 left-1">
-                  <span className="text-xs">{WORKOUT_TAGS_ICONS[post.tag] || '⚪'}</span>
-                </div>
-              )}
-              {/* Bravo count */}
-              <div className="absolute bottom-1 right-1 flex items-center gap-0.5">
-                <span className="text-[10px]">🏋️</span>
-                <span className="text-white text-[10px] font-head font-bold drop-shadow">{post.likes_count || 0}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-          <span className="text-5xl mb-3">🏋️</span>
-          <p className="text-txt-2 font-head text-base">
-            {isOwn ? 'Post your first workout!' : 'No posts yet.'}
+      {/* Grid */}
+      {displayPosts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center px-8">
+          <p className="text-4xl mb-3">{tab === 'posts' ? '📸' : tab === 'saved' ? '🔖' : '🏋️'}</p>
+          <p className="text-txt-2 text-sm">
+            {tab === 'posts' && (isOwn ? 'Post your first workout!' : 'No posts yet.')}
+            {tab === 'saved' && 'No saved posts yet.'}
+            {tab === 'liked' && 'No liked posts yet.'}
           </p>
-          {isOwn && (
+          {tab === 'posts' && isOwn && (
             <button onClick={() => setShowUpload(true)}
-              className="mt-4 bg-red-p text-white font-head font-bold px-6 py-2.5 rounded-full text-sm">
+              className="mt-4 bg-gradient-to-r from-red-p to-red-b text-white font-head font-bold px-6 py-2.5 rounded-full text-sm">
               Post Now
             </button>
           )}
         </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-0.5 mt-0.5">
+          {displayPosts.map(post => (
+            <div key={post.id} className="aspect-square relative overflow-hidden bg-bg-4">
+              {post.media_url && post.media_type === 'image' && (
+                <Image src={post.media_url} alt={post.body} fill className="object-cover" />
+              )}
+              {post.media_url && post.media_type === 'video' && (
+                <video src={post.media_url} className="w-full h-full object-cover" muted playsInline />
+              )}
+              {(!post.media_url || post.media_type === 'text') && (
+                <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-to-br from-red-p/25 to-bg-3">
+                  <p className="text-white text-xs text-center leading-tight font-head font-bold line-clamp-4">{post.body}</p>
+                </div>
+              )}
+              <div className="absolute bottom-1 right-1 flex items-center gap-0.5">
+                {(post.likes_count || 0) > 0 && (
+                  <span className="text-white text-[10px] font-bold drop-shadow">🏋️ {post.likes_count}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {showUpload && (
-        <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onPost={() => { setShowUpload(false); loadData() }} />
+        <UploadModal currentUser={viewer} onClose={() => setShowUpload(false)}
+          onPost={() => { setShowUpload(false); loadData() }} />
+      )}
+
+      {/* Spotters / Spotting modal */}
+      {spottersModal && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setSpottersModal(null)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative w-full bg-bg-2 rounded-t-2xl slide-up max-h-[70svh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-bdr-1 sticky top-0 bg-bg-2">
+              <h3 className="font-head font-bold text-base text-txt-1">
+                {spottersModal === 'spotters' ? `Spotters · ${followerCount}` : `Spotting · ${followingCount}`}
+              </h3>
+              <button onClick={() => setSpottersModal(null)} className="text-txt-3 text-2xl w-8 h-8 flex items-center justify-center">×</button>
+            </div>
+            <div className="p-4 space-y-4">
+              {(spottersModal === 'spotters' ? spottersList : spottingList).map(u => (
+                <Link key={u.id} href={`/profile/${u.username}`} onClick={() => setSpottersModal(null)}
+                  className="flex items-center gap-3 active:opacity-70">
+                  <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-bg-4"
+                    style={{ boxShadow: '0 0 0 2px #c0392b' }}>
+                    {u.avatar_url ? (
+                      <Image src={u.avatar_url} alt={u.username} width={44} height={44} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-head font-bold text-white bg-gradient-to-br from-red-p to-red-b">
+                        {u.username.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-head font-bold text-txt-1 text-sm">@{u.username}</p>
+                    {u.full_name && <p className="text-txt-3 text-xs">{u.full_name}</p>}
+                  </div>
+                </Link>
+              ))}
+              {(spottersModal === 'spotters' ? spottersList : spottingList).length === 0 && (
+                <p className="text-txt-3 text-sm text-center py-8">Nobody yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <BottomNav onUpload={() => setShowUpload(true)} />
