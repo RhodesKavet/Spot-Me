@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { Profile } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
+import SideNav from '@/components/SideNav'
 import UploadModal from '@/components/UploadModal'
 
 const GlobeMap = dynamic(() => import('@/components/GlobeMap'), {
@@ -34,8 +35,11 @@ export default function MapPage() {
   }, [router])
 
   return (
-    <div className="relative bg-[#060606] h-svh overflow-hidden">
-      <GlobeMap currentUserId={profile?.id} userGymId={profile?.gym_id} />
+    <div className="flex h-svh bg-bg-1">
+      <SideNav onUpload={() => setShowUpload(true)} currentUser={profile} />
+      <div className="flex-1 relative overflow-hidden min-w-0" style={{ background: '#060606' }}>
+        <GlobeMap currentUserId={profile?.id} userGymId={profile?.gym_id} />
+      </div>
       {showUpload && (
         <UploadModal currentUser={profile} onClose={() => setShowUpload(false)} onPost={() => setShowUpload(false)} />
       )}

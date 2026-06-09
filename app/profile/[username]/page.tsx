@@ -7,9 +7,9 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Profile, Post } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
+import SideNav from '@/components/SideNav'
 import UploadModal from '@/components/UploadModal'
-import Logo from '@/components/Logo'
-import { GridIcon, BookmarkIcon, BarbellIcon, ArrowLeftIcon, CameraIcon, SignOutIcon } from '@/components/Icons'
+import { GridIcon, BookmarkIcon, BarbellIcon, ArrowLeftIcon, CameraIcon, MapPinIcon } from '@/components/Icons'
 
 type Tab = 'posts' | 'saved' | 'liked'
 
@@ -154,185 +154,198 @@ export default function UserProfilePage() {
   const displayPosts = tab === 'posts' ? posts : tab === 'saved' ? savedPosts : likedPosts
 
   return (
-    <div className="min-h-svh bg-bg-1 pb-20">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 glass sticky top-0 z-20">
-        <button onClick={() => router.back()} className="text-txt-2 p-1 w-9 h-9 flex items-center justify-center">
-          <ArrowLeftIcon size={22} />
-        </button>
-        <Logo size="sm" />
-        {isOwn ? (
-          <button onClick={() => supabase.auth.signOut().then(() => router.replace('/auth'))}
-            className="text-txt-3 hover:text-red-b transition-colors w-9 h-9 flex items-center justify-center">
-            <SignOutIcon size={20} />
-          </button>
-        ) : <div className="w-9" />}
-      </div>
+    <div className="flex min-h-svh bg-bg-1">
+      <SideNav onUpload={() => setShowUpload(true)} currentUser={viewer} />
 
-      {/* Hero */}
-      <div className="relative px-4 pt-8 pb-4">
-        {/* Gym photo banner */}
-        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=70"
-          alt="" className="absolute top-0 left-0 right-0 h-48 w-full object-cover opacity-30 pointer-events-none" style={{ objectPosition: 'center 30%' }} />
-        <div className="absolute top-0 left-0 right-0 h-48 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,.35) 0%, rgba(17,17,17,.95) 100%)' }} />
+      {/* Scrollable profile content */}
+      <div className="flex-1 min-w-0 overflow-y-auto pb-24">
+        <div className="mx-auto max-w-[680px]">
 
-        <div className="relative flex items-end gap-4 mb-5">
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            <div className="w-[82px] h-[82px] rounded-full overflow-hidden bg-bg-4"
-              style={{ boxShadow: '0 0 0 3px #c0392b, 0 0 20px rgba(192,57,43,.4)' }}>
-              {profile.avatar_url ? (
-                <Image src={profile.avatar_url} alt={profile.username} width={82} height={82} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-head font-bold text-3xl text-white bg-gradient-to-br from-red-p to-red-b">
-                  {profile.username.charAt(0).toUpperCase()}
+          {/* ── Strava-style full-width banner ── */}
+          <div className="relative h-52 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=70"
+              alt="" className="w-full h-full object-cover" style={{ objectPosition: 'center 40%' }} />
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,.2) 0%, rgba(8,8,8,.9) 100%)' }} />
+            {/* Back button */}
+            <button onClick={() => router.back()}
+              className="absolute top-4 left-4 w-9 h-9 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              style={{ background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(8px)' }}>
+              <ArrowLeftIcon size={20} />
+            </button>
+          </div>
+
+          {/* ── Avatar overlapping banner ── */}
+          <div className="px-5 -mt-16 relative z-10">
+            <div className="flex items-end justify-between mb-4">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-28 h-28 rounded-2xl overflow-hidden"
+                  style={{ border: '3px solid #080808', boxShadow: '0 0 0 2px #c0392b, 0 0 24px rgba(192,57,43,.4)' }}>
+                  {profile.avatar_url
+                    ? <Image src={profile.avatar_url} alt={profile.username} width={112} height={112} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center font-head font-black text-4xl text-white"
+                        style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                        {profile.username[0].toUpperCase()}
+                      </div>}
                 </div>
-              )}
-            </div>
-            {isOwn && (
-              <button onClick={() => avatarRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-red-p flex items-center justify-center border-2 border-bg-1 text-white">
-                {uploading
-                  ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>
-                  : <CameraIcon size={13} />}
-              </button>
-            )}
-          </div>
-          <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
-
-          {/* Name / username / gym */}
-          <div className="flex-1 min-w-0 pb-1">
-            {editMode ? (
-              <input value={editName} onChange={e => setEditName(e.target.value)} className="input-dark text-base mb-1 py-2" placeholder="Display name" />
-            ) : (
-              <h1 className="font-head font-bold text-xl text-txt-1 leading-tight truncate">
-                {profile.full_name || profile.username}
-              </h1>
-            )}
-            <p className="text-txt-3 text-sm">@{profile.username}</p>
-            {gymName && (
-              <p className="text-[11px] text-txt-3 mt-1 flex items-center gap-1">
-                🏋️‍♂️ <span className="text-red-b/80 font-head font-bold">{gymName}</span>
-              </p>
-            )}
-          </div>
-
-          {/* Action button */}
-          {isOwn ? (
-            editMode ? (
-              <div className="flex gap-2 pb-1">
-                <button onClick={saveEdit} disabled={saving}
-                  className="px-4 py-2 rounded-xl bg-red-p text-white text-sm font-head font-bold disabled:opacity-50">
-                  {saving ? '…' : 'Save'}
-                </button>
-                <button onClick={() => setEditMode(false)}
-                  className="px-3 py-2 rounded-xl glass border border-bdr-1 text-sm text-txt-2">
-                  Cancel
-                </button>
+                {isOwn && (
+                  <button onClick={() => avatarRef.current?.click()}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl flex items-center justify-center border-2 border-bg-1"
+                    style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                    {uploading
+                      ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>
+                      : <CameraIcon size={14} />}
+                  </button>
+                )}
               </div>
-            ) : (
-              <button onClick={() => setEditMode(true)}
-                className="pb-1 px-4 py-2 rounded-xl glass border border-bdr-1 text-sm font-head font-bold text-txt-2 hover:text-txt-1 transition-colors">
-                Edit
-              </button>
-            )
-          ) : (
-            <button onClick={toggleFollow}
-              className={`pb-1 px-5 py-2 rounded-xl text-sm font-head font-bold transition-all ${
-                isFollowing ? 'glass border border-bdr-1 text-txt-2' : 'bg-gradient-to-r from-red-p to-red-b text-white glow-red-sm'
-              }`}>
-              {isFollowing ? 'Spotting ✓' : 'Spot Them'}
-            </button>
-          )}
-        </div>
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
 
-        {/* Bio */}
-        {editMode ? (
-          <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3}
-            placeholder="Bio — tell your story…" className="input-dark text-sm resize-none mb-4 py-3" />
-        ) : profile.bio ? (
-          <p className="text-txt-2 text-sm mb-4 leading-relaxed">{profile.bio}</p>
-        ) : null}
-
-        {/* Stats — PulseFit-style big impact numbers */}
-        <div className="flex border-t border-b border-white/5 -mx-4 px-4 py-4 gap-0">
-          <div className="flex-1 text-center border-r border-white/5">
-            <p className="font-head font-black text-4xl leading-none text-red-b">{posts.length}</p>
-            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Posts</p>
-          </div>
-          <button onClick={() => { setSpottersModal('spotters'); loadSpotters() }}
-            className="flex-1 text-center border-r border-white/5 active:scale-95 transition-transform">
-            <p className="font-head font-black text-4xl leading-none text-red-b">{followerCount}</p>
-            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Spotters</p>
-          </button>
-          <button onClick={() => { setSpottersModal('spotting'); loadSpotting() }}
-            className="flex-1 text-center active:scale-95 transition-transform">
-            <p className="font-head font-black text-4xl leading-none text-red-b">{followingCount}</p>
-            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Spotting</p>
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs — icon-only with distinct accent colors */}
-      <div className="flex border-b border-bdr-1 sticky top-[57px] bg-bg-1 z-10">
-        {/* Posts — red */}
-        <button onClick={() => setTab('posts')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'posts' ? 'tab-red' : 'text-txt-3'}`}>
-          <GridIcon size={22} filled={tab === 'posts'} />
-          {tab === 'posts' && <span className="tab-active-indicator tab-active-red" />}
-        </button>
-        {/* Saved — blue */}
-        <button onClick={() => setTab('saved')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'saved' ? 'tab-blue' : 'text-txt-3'}`}>
-          <BookmarkIcon size={22} filled={tab === 'saved'} />
-          {tab === 'saved' && <span className="tab-active-indicator tab-active-blue" />}
-        </button>
-        {/* Liked — gold */}
-        <button onClick={() => setTab('liked')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'liked' ? 'tab-gold' : 'text-txt-3'}`}>
-          <BarbellIcon size={22} filled={tab === 'liked'} />
-          {tab === 'liked' && <span className="tab-active-indicator tab-active-gold" />}
-        </button>
-      </div>
-
-      {/* Grid */}
-      {displayPosts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center px-8">
-          <p className="text-4xl mb-3">{tab === 'posts' ? '📸' : tab === 'saved' ? '🔖' : '🏋️'}</p>
-          <p className="text-txt-2 text-sm">
-            {tab === 'posts' && (isOwn ? 'Post your first workout!' : 'No posts yet.')}
-            {tab === 'saved' && 'No saved posts yet.'}
-            {tab === 'liked' && 'No liked posts yet.'}
-          </p>
-          {tab === 'posts' && isOwn && (
-            <button onClick={() => setShowUpload(true)}
-              className="mt-4 bg-gradient-to-r from-red-p to-red-b text-white font-head font-bold px-6 py-2.5 rounded-full text-sm">
-              Post Now
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-0.5 mt-0.5">
-          {displayPosts.map(post => (
-            <div key={post.id} className="aspect-square relative overflow-hidden bg-bg-4">
-              {post.media_url && post.media_type === 'image' && (
-                <Image src={post.media_url} alt={post.body} fill className="object-cover" />
-              )}
-              {post.media_url && post.media_type === 'video' && (
-                <video src={post.media_url} className="w-full h-full object-cover" muted playsInline />
-              )}
-              {(!post.media_url || post.media_type === 'text') && (
-                <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-to-br from-red-p/25 to-bg-3">
-                  <p className="text-white text-xs text-center leading-tight font-head font-bold line-clamp-4">{post.body}</p>
-                </div>
-              )}
-              <div className="absolute bottom-1 right-1 flex items-center gap-0.5">
-                {(post.likes_count || 0) > 0 && (
-                  <span className="text-white text-[10px] font-bold drop-shadow">🏋️ {post.likes_count}</span>
+              {/* Action button */}
+              <div className="pb-1">
+                {isOwn ? (
+                  editMode ? (
+                    <div className="flex gap-2">
+                      <button onClick={saveEdit} disabled={saving}
+                        className="px-5 py-2.5 rounded-xl font-head font-bold text-sm text-white uppercase tracking-wide disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                        {saving ? '…' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditMode(false)} className="btn-ghost text-xs px-4 py-2.5">Cancel</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setEditMode(true)} className="btn-ghost">Edit Profile</button>
+                  )
+                ) : (
+                  <button onClick={toggleFollow}
+                    className={`px-6 py-2.5 rounded-xl font-head font-bold text-sm uppercase tracking-wide transition-all press ${
+                      isFollowing
+                        ? 'btn-ghost'
+                        : 'text-white'
+                    }`}
+                    style={isFollowing ? {} : { background: 'linear-gradient(135deg,#c0392b,#e8453c)', boxShadow: '0 0 16px rgba(192,57,43,.4)' }}>
+                    {isFollowing ? 'Spotting ✓' : 'Spot Them'}
+                  </button>
                 )}
               </div>
             </div>
-          ))}
+
+            {/* Name + handle */}
+            {editMode ? (
+              <input value={editName} onChange={e => setEditName(e.target.value)}
+                className="input-dark text-lg mb-1 py-2.5 font-head font-bold" placeholder="Display name" />
+            ) : (
+              <h1 className="font-head font-black text-2xl text-txt-1 leading-tight">
+                {profile.full_name || profile.username}
+              </h1>
+            )}
+            <p className="text-txt-3 text-sm font-head font-bold mb-1">@{profile.username}</p>
+
+            {/* Gym badge */}
+            {gymName && (
+              <div className="inline-flex items-center gap-1.5 mt-1 mb-2 px-2.5 py-1 rounded-lg"
+                style={{ background: 'rgba(192,57,43,.12)', border: '1px solid rgba(192,57,43,.25)' }}>
+                <MapPinIcon size={11} style={{ color: '#e8453c' }} />
+                <span className="text-[11px] font-head font-bold text-red-b">{gymName}</span>
+              </div>
+            )}
+
+            {/* Bio */}
+            {editMode ? (
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3}
+                placeholder="Bio — tell your story…" className="input-dark text-sm resize-none mt-3" />
+            ) : profile.bio ? (
+              <p className="text-txt-2 text-sm mt-3 leading-relaxed">{profile.bio}</p>
+            ) : null}
+          </div>
+
+          {/* ── Stats strip ── */}
+          <div className="mx-5 mt-5 mb-1 grid grid-cols-3 rounded-2xl overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,.05)', background: '#0d0d0d' }}>
+            <div className="text-center py-4">
+              <p className="font-head font-black text-3xl leading-none text-red-b">{posts.length}</p>
+              <p className="text-white/30 text-[9px] font-head font-bold uppercase tracking-widest mt-1.5">Posts</p>
+            </div>
+            <button onClick={() => { setSpottersModal('spotters'); loadSpotters() }}
+              className="text-center py-4 border-x border-white/5 press transition-colors hover:bg-white/[0.02]">
+              <p className="font-head font-black text-3xl leading-none text-red-b">{followerCount}</p>
+              <p className="text-white/30 text-[9px] font-head font-bold uppercase tracking-widest mt-1.5">Spotters</p>
+            </button>
+            <button onClick={() => { setSpottersModal('spotting'); loadSpotting() }}
+              className="text-center py-4 press transition-colors hover:bg-white/[0.02]">
+              <p className="font-head font-black text-3xl leading-none text-red-b">{followingCount}</p>
+              <p className="text-white/30 text-[9px] font-head font-bold uppercase tracking-widest mt-1.5">Spotting</p>
+            </button>
+          </div>
+
+          {/* ── Tabs ── */}
+          <div className="flex mx-5 mt-4 mb-0.5 rounded-xl overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,.05)', background: '#0d0d0d' }}>
+            {[
+              { key: 'posts', Icon: GridIcon,     color: 'tab-red',  indicator: 'tab-active-red'  },
+              { key: 'saved', Icon: BookmarkIcon,  color: 'tab-blue', indicator: 'tab-active-blue' },
+              { key: 'liked', Icon: BarbellIcon,   color: 'tab-gold', indicator: 'tab-active-gold' },
+            ].map(({ key, Icon, color, indicator }) => (
+              <button key={key} onClick={() => setTab(key as Tab)}
+                className={`flex-1 py-3.5 flex items-center justify-center gap-2 transition-colors relative ${
+                  tab === key ? color : 'text-txt-3 hover:text-txt-2'
+                }`}>
+                <Icon size={19} filled={tab === key} />
+                <span className="font-head font-bold text-xs uppercase tracking-wide hidden sm:block">
+                  {key === 'posts' ? 'Posts' : key === 'saved' ? 'Saved' : 'Liked'}
+                </span>
+                {tab === key && <span className={`tab-active-indicator ${indicator}`} />}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Post grid ── */}
+          {displayPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center px-8">
+              <BarbellIcon size={38} className="text-white/8 mb-4" />
+              <p className="text-txt-3 text-sm font-head">
+                {tab === 'posts' && (isOwn ? 'Post your first workout!' : 'No posts yet.')}
+                {tab === 'saved' && 'Nothing saved yet.'}
+                {tab === 'liked' && 'No bravos given yet.'}
+              </p>
+              {tab === 'posts' && isOwn && (
+                <button onClick={() => setShowUpload(true)}
+                  className="mt-5 font-head font-bold px-6 py-2.5 rounded-xl text-sm text-white uppercase tracking-wide press"
+                  style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                  Post Now
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-0.5 mt-0.5">
+              {displayPosts.map(post => (
+                <div key={post.id} className="aspect-square relative overflow-hidden bg-bg-4 group">
+                  {post.media_url && post.media_type === 'image' && (
+                    <Image src={post.media_url} alt={post.body} fill className="object-cover" />
+                  )}
+                  {post.media_url && post.media_type === 'video' && (
+                    <video src={post.media_url} className="w-full h-full object-cover" muted playsInline />
+                  )}
+                  {(!post.media_url || post.media_type === 'text') && (
+                    <div className="w-full h-full flex items-center justify-center p-2"
+                      style={{ background: 'linear-gradient(135deg,rgba(192,57,43,.3),#121212)' }}>
+                      <p className="text-white text-xs text-center leading-tight font-head font-bold line-clamp-4">{post.body}</p>
+                    </div>
+                  )}
+                  {/* Hover overlay with bravo count */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'rgba(0,0,0,.55)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <BarbellIcon size={16} className="text-white" />
+                      <span className="font-head font-black text-white text-sm">{post.likes_count || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {showUpload && (
         <UploadModal currentUser={viewer} onClose={() => setShowUpload(false)}
@@ -342,28 +355,29 @@ export default function UserProfilePage() {
       {/* Spotters / Spotting modal */}
       {spottersModal && (
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setSpottersModal(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative w-full bg-bg-2 rounded-t-2xl slide-up max-h-[70svh] overflow-y-auto"
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative w-full rounded-t-2xl slide-up max-h-[70svh] overflow-y-auto"
+            style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,.06)' }}
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-bdr-1 sticky top-0 bg-bg-2">
-              <h3 className="font-head font-bold text-base text-txt-1">
+            <div className="flex items-center justify-between px-5 py-4 sticky top-0"
+              style={{ background: '#0d0d0d', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+              <h3 className="font-head font-bold text-txt-1 text-base">
                 {spottersModal === 'spotters' ? `Spotters · ${followerCount}` : `Spotting · ${followingCount}`}
               </h3>
               <button onClick={() => setSpottersModal(null)} className="text-txt-3 text-2xl w-8 h-8 flex items-center justify-center">×</button>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
               {(spottersModal === 'spotters' ? spottersList : spottingList).map(u => (
                 <Link key={u.id} href={`/profile/${u.username}`} onClick={() => setSpottersModal(null)}
-                  className="flex items-center gap-3 active:opacity-70">
-                  <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-bg-4"
-                    style={{ boxShadow: '0 0 0 2px #c0392b' }}>
-                    {u.avatar_url ? (
-                      <Image src={u.avatar_url} alt={u.username} width={44} height={44} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-head font-bold text-white bg-gradient-to-br from-red-p to-red-b">
-                        {u.username.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0"
+                    style={{ border: '2px solid rgba(192,57,43,.5)' }}>
+                    {u.avatar_url
+                      ? <Image src={u.avatar_url} alt={u.username} width={44} height={44} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center font-head font-black text-white"
+                          style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                          {u.username[0].toUpperCase()}
+                        </div>}
                   </div>
                   <div>
                     <p className="font-head font-bold text-txt-1 text-sm">@{u.username}</p>

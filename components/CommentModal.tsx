@@ -9,9 +9,10 @@ interface Props {
   post: Post
   currentUser: Profile | null
   onClose: () => void
+  onNewComment?: () => void
 }
 
-export default function CommentModal({ post, currentUser, onClose }: Props) {
+export default function CommentModal({ post, currentUser, onClose, onNewComment }: Props) {
   const [comments, setComments] = useState<Comment[]>([])
   const [body, setBody]         = useState('')
   const [loading, setLoading]   = useState(true)
@@ -33,7 +34,8 @@ export default function CommentModal({ post, currentUser, onClose }: Props) {
   const postComment = async () => {
     if (!currentUser || !body.trim() || posting) return
     setPosting(true)
-    await supabase.from('comments').insert({ post_id: post.id, user_id: currentUser.id, body: body.trim() })
+    const { error } = await supabase.from('comments').insert({ post_id: post.id, user_id: currentUser.id, body: body.trim() })
+    if (!error) onNewComment?.()   // update the count badge in FeedPost
     setBody('')
     await fetchComments()
     setPosting(false)

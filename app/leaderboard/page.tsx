@@ -7,22 +7,36 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Profile } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
+import SideNav from '@/components/SideNav'
 import UploadModal from '@/components/UploadModal'
 import { BarbellIcon, TrophyIcon } from '@/components/Icons'
 
 interface LeaderEntry extends Profile { totalBravo: number }
 
-const RANK_STYLE: Record<number, { border: string; glow: string; numColor: string }> = {
-  0: { border: '#f5a623', glow: '0 0 24px rgba(245,166,35,.5)', numColor: '#f5a623' },
-  1: { border: '#9ca3af', glow: '0 0 20px rgba(156,163,175,.3)', numColor: '#c0c0c0' },
-  2: { border: '#cd7f32', glow: '0 0 20px rgba(205,127,50,.3)', numColor: '#cd7f32' },
+/* Medal colours */
+const MEDAL = [
+  { border: '#FFD700', glow: 'rgba(255,215,0,.55)',   num: '#FFD700', bg: 'rgba(255,215,0,.08)',  label: '1ST' },
+  { border: '#C0C0C0', glow: 'rgba(192,192,192,.35)', num: '#C0C0C0', bg: 'rgba(192,192,192,.05)', label: '2ND' },
+  { border: '#CD7F32', glow: 'rgba(205,127,50,.4)',   num: '#CD7F32', bg: 'rgba(205,127,50,.07)', label: '3RD' },
+]
+
+/* ── Crown SVG ── */
+function CrownIcon({ color }: { color: string }) {
+  return (
+    <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+      <path d="M1 15L3.5 5L8 10L11 1L14 10L18.5 5L21 15H1Z" fill={color} stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>
+      <circle cx="11" cy="1" r="1.5" fill={color}/>
+      <circle cx="3.5" cy="5"  r="1.2" fill={color}/>
+      <circle cx="18.5" cy="5" r="1.2" fill={color}/>
+    </svg>
+  )
 }
 
 export default function LeaderboardPage() {
-  const [leaders, setLeaders]       = useState<LeaderEntry[]>([])
+  const [leaders, setLeaders]         = useState<LeaderEntry[]>([])
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
-  const [loading, setLoading]       = useState(true)
-  const [showUpload, setShowUpload] = useState(false)
+  const [loading, setLoading]         = useState(true)
+  const [showUpload, setShowUpload]   = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -33,18 +47,21 @@ export default function LeaderboardPage() {
       const { data: me } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
       setCurrentUser(me)
 
-      const { data: profiles } = await supabase.from('profiles').select('*').order('points', { ascending: false }).limit(20)
+      // Fetch a larger pool so high-bravo users aren't missed by a stale 'points' sort
+      const { data: profiles } = await supabase.from('profiles').select('*').limit(50)
 
       const withBravo: LeaderEntry[] = await Promise.all(
         (profiles || []).map(async (p: Profile) => {
-          const postIds = (await supabase.from('posts').select('id').eq('user_id', p.id)).data?.map((r: { id: number }) => r.id) || []
+          const { data: postRows } = await supabase.from('posts').select('id').eq('user_id', p.id)
+          const postIds = (postRows || []).map((r: { id: number }) => r.id)
           const { count } = postIds.length
             ? await supabase.from('likes').select('*', { count: 'exact', head: true }).in('post_id', postIds)
             : { count: 0 }
-          return { ...p, totalBravo: count || p.points || 0 }
+          return { ...p, totalBravo: count ?? 0 }
         })
       )
 
+      // Sort by actual bravo, show only users with at least some activity
       withBravo.sort((a, b) => b.totalBravo - a.totalBravo)
       setLeaders(withBravo)
       setLoading(false)
@@ -53,126 +70,241 @@ export default function LeaderboardPage() {
   }, [router])
 
   if (loading) return (
-    <div className="h-svh flex items-center justify-center" style={{ background: '#111' }}>
-      <div className="w-7 h-7 border-2 border-red-p border-t-transparent rounded-full animate-spin" />
+    <div className="h-svh flex flex-col items-center justify-center gap-4" style={{ background: '#0d0d0d' }}>
+      <TrophyIcon size={36} className="text-red-b/30" />
+      <div className="w-6 h-6 border-2 border-red-p border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
-  const isMe = (id: string) => currentUser?.id === id
+  const isMe       = (id: string) => currentUser?.id === id
   const totalBravos = leaders.reduce((s, l) => s + l.totalBravo, 0)
+  const top3        = leaders.slice(0, 3)
+  const rest        = leaders.slice(3)
 
   return (
-    <div className="min-h-svh pb-24" style={{ background: '#111111' }}>
-      {/* Hero header — PulseFit style */}
-      <div className="relative overflow-hidden pt-12 pb-8 px-5 text-center">
-        <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&q=70"
-          alt="" className="absolute inset-0 w-full h-full object-cover opacity-25" style={{ objectPosition: 'center 60%' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,.5) 0%, rgba(17,17,17,.9) 100%)' }} />
+    <div className="flex min-h-svh bg-bg-1">
+      <SideNav onUpload={() => setShowUpload(true)} currentUser={currentUser} />
+      <div className="flex-1 min-w-0 overflow-y-auto pb-28" style={{ background: '#0d0d0d' }}><div className="mx-auto max-w-[740px]">
+
+      {/* ── Hero ── */}
+      <div className="relative overflow-hidden pt-14 pb-10 px-5 text-center">
+        <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=900&q=70"
+          alt="" className="absolute inset-0 w-full h-full object-cover opacity-30"
+          style={{ objectPosition: 'center 55%' }} />
+        <div className="absolute inset-0"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,.55) 0%, rgba(13,13,13,1) 100%)' }} />
 
         <div className="relative z-10">
-          {/* Label */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 text-xs font-head font-bold uppercase tracking-widest"
-            style={{ background: 'rgba(192,57,43,.2)', border: '1px solid rgba(192,57,43,.4)', color: '#e8453c' }}>
-            <TrophyIcon size={12} />
-            This Week's Ranking
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5 text-xs font-head font-bold uppercase tracking-widest"
+            style={{ background: 'rgba(192,57,43,.18)', border: '1px solid rgba(192,57,43,.4)', color: '#e8453c' }}>
+            <TrophyIcon size={13} />
+            All-Time Rankings
           </div>
 
-          {/* Big headline */}
-          <h1 className="font-head font-black uppercase text-white leading-none mb-1"
-            style={{ fontSize: 'clamp(2.8rem, 10vw, 4rem)', letterSpacing: '-0.01em' }}>
+          <h1 className="font-head font-black uppercase text-white leading-none mb-2"
+            style={{ fontSize: 'clamp(2.8rem, 10vw, 4.2rem)', letterSpacing: '-0.02em' }}>
             TOP <span style={{ color: '#e8453c' }}>LIFTERS</span>
           </h1>
-          <p className="text-white/40 text-sm font-head">Ranked by total Bravo power</p>
+          <p className="text-white/35 text-sm font-head tracking-wide">Ranked by total Bravo power</p>
 
-          {/* Community stat strip */}
-          <div className="flex justify-center gap-10 mt-6">
+          {/* Stats strip */}
+          <div className="flex justify-center gap-12 mt-7">
             <div className="text-center">
-              <p className="font-head font-black text-3xl leading-none text-red-b">{leaders.length}</p>
-              <p className="text-white/30 text-[10px] font-head font-bold uppercase tracking-widest mt-1">Athletes</p>
+              <p className="font-head font-black text-4xl leading-none" style={{ color: '#e8453c' }}>
+                {leaders.length}
+              </p>
+              <p className="text-white/25 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Athletes</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px bg-white/8" />
             <div className="text-center">
-              <p className="font-head font-black text-3xl leading-none text-red-b">{totalBravos.toLocaleString()}</p>
-              <p className="text-white/30 text-[10px] font-head font-bold uppercase tracking-widest mt-1">Total Bravas</p>
+              <p className="font-head font-black text-4xl leading-none" style={{ color: '#e8453c' }}>
+                {totalBravos.toLocaleString()}
+              </p>
+              <p className="text-white/25 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Total Bravas</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Top 3 podium */}
-      {leaders.length >= 3 && (
-        <div className="px-4 mb-6">
-          <div className="flex items-end justify-center gap-2">
-            <PodiumCard user={leaders[1]} rank={1} height={88} />
-            <PodiumCard user={leaders[0]} rank={0} height={116} />
-            <PodiumCard user={leaders[2]} rank={2} height={68} />
-          </div>
+      {/* ── Podium top 3 ── */}
+      {top3.length > 0 && (
+        <div className="px-4 mb-8">
+          {/* 1st by itself, centred and large */}
+          {top3[0] && (
+            <div className="flex justify-center mb-4">
+              <PodiumOne user={top3[0]} isMe={isMe(top3[0].id)} />
+            </div>
+          )}
+          {/* 2nd + 3rd side by side */}
+          {top3.length >= 2 && (
+            <div className="flex gap-3 justify-center">
+              {top3[1] && <PodiumTwo user={top3[1]} rank={1} isMe={isMe(top3[1].id)} />}
+              {top3[2] && <PodiumTwo user={top3[2]} rank={2} isMe={isMe(top3[2].id)} />}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Ranked list */}
+      {/* ── Ranked list 4+ ── */}
       <div className="px-4 space-y-2">
-        {leaders.slice(3).map((user, i) => (
-          <Link key={user.id} href={`/profile/${user.username}`}>
-            <div className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-colors ${isMe(user.id) ? 'border border-red-p/40' : 'border border-white/5'}`}
-              style={{ background: isMe(user.id) ? 'rgba(192,57,43,.08)' : 'rgba(255,255,255,.03)' }}>
-              <span className="font-head font-bold text-white/25 text-sm w-5 text-center">{i + 4}</span>
-              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
-                style={{ border: '1.5px solid rgba(255,255,255,.1)' }}>
-                {user.avatar_url
-                  ? <Image src={user.avatar_url} alt={user.username} width={40} height={40} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center font-head font-bold text-sm text-white bg-red-p">{user.username.charAt(0).toUpperCase()}</div>}
+        {rest.length > 0 && (
+          <p className="text-white/20 text-[10px] font-head font-bold uppercase tracking-widest px-1 mb-3">
+            Honourable mentions
+          </p>
+        )}
+        {rest.map((user, i) => {
+          const rank = i + 4
+          return (
+            <Link key={user.id} href={`/profile/${user.username}`}>
+              <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all hover:bg-white/[0.05]"
+                style={{
+                  background: isMe(user.id) ? 'rgba(192,57,43,.08)' : 'rgba(255,255,255,.03)',
+                  border: isMe(user.id) ? '1px solid rgba(192,57,43,.35)' : '1px solid rgba(255,255,255,.05)',
+                }}>
+                {/* Rank pill */}
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)' }}>
+                  <span className="font-head font-black text-xs text-white/40">{rank}</span>
+                </div>
+
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
+                  style={{ border: '1.5px solid rgba(255,255,255,.1)' }}>
+                  {user.avatar_url
+                    ? <Image src={user.avatar_url} alt={user.username} width={40} height={40} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center font-head font-bold text-sm text-white"
+                        style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                        {user.username[0].toUpperCase()}
+                      </div>}
+                </div>
+
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-head font-bold text-white text-sm truncate">
+                    @{user.username}
+                    {isMe(user.id) && (
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                        style={{ background: 'rgba(192,57,43,.2)', color: '#e8453c' }}>YOU</span>
+                    )}
+                  </p>
+                  {user.full_name && <p className="text-white/30 text-xs truncate">{user.full_name}</p>}
+                </div>
+
+                {/* Bravo count */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <BarbellIcon size={14} className="text-red-b/50" />
+                  <span className="font-head font-bold text-white/80 text-sm tabular-nums">
+                    {user.totalBravo.toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-head font-bold text-white text-sm truncate">
-                  @{user.username} {isMe(user.id) && <span className="text-red-b text-xs ml-1">YOU</span>}
-                </p>
-                {user.full_name && <p className="text-white/30 text-xs truncate">{user.full_name}</p>}
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <BarbellIcon size={14} className="text-red-b/60" />
-                <span className="font-head font-bold text-white text-sm">{user.totalBravo.toLocaleString()}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          )
+        })}
 
         {leaders.length === 0 && (
-          <div className="text-center py-20">
-            <BarbellIcon size={40} className="text-white/10 mx-auto mb-3" />
-            <p className="text-white/30 font-head text-sm">No one on the board yet.<br />Start posting to earn Bravo!</p>
+          <div className="text-center py-24">
+            <BarbellIcon size={44} className="text-white/8 mx-auto mb-4" />
+            <p className="text-white/25 font-head text-sm leading-relaxed">
+              No lifters ranked yet.<br />Post a workout and earn your first Bravo!
+            </p>
           </div>
         )}
       </div>
 
-      {showUpload && <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onPost={() => setShowUpload(false)} />}
+      {showUpload && (
+        <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onPost={() => setShowUpload(false)} />
+      )}
       <BottomNav onUpload={() => setShowUpload(true)} />
+      </div></div>
     </div>
   )
 }
 
-function PodiumCard({ user, rank, height }: { user: LeaderEntry; rank: number; height: number }) {
-  const s = RANK_STYLE[rank]
-  const labels = ['🥇 1ST', '🥈 2ND', '🥉 3RD']
-  const isFirst = rank === 0
+/* ── #1 — Hero card ── */
+function PodiumOne({ user, isMe }: { user: LeaderEntry; isMe: boolean }) {
+  const m = MEDAL[0]
   return (
-    <Link href={`/profile/${user.username}`} className="flex-1 max-w-[130px] flex flex-col items-center gap-2">
+    <Link href={`/profile/${user.username}`}
+      className="flex flex-col items-center gap-3 w-full max-w-[240px]">
+
+      {/* Crown + avatar */}
+      <div className="relative">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+          <CrownIcon color={m.border} />
+        </div>
+        <div className="w-24 h-24 rounded-full overflow-hidden relative"
+          style={{
+            border: `3px solid ${m.border}`,
+            boxShadow: `0 0 0 4px ${m.bg}, 0 0 32px ${m.glow}, 0 0 64px ${m.glow}`,
+          }}>
+          {user.avatar_url
+            ? <Image src={user.avatar_url} alt={user.username} width={96} height={96} className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center font-head font-black text-2xl text-white"
+                style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+                {user.username[0].toUpperCase()}
+              </div>}
+        </div>
+      </div>
+
+      {/* Info card */}
+      <div className="w-full rounded-2xl px-5 py-4 text-center"
+        style={{ background: m.bg, border: `1px solid ${m.border}30` }}>
+        <p className="font-head font-black text-lg leading-tight" style={{ color: m.border }}>
+          {m.label} PLACE
+        </p>
+        <p className="font-head font-bold text-white text-base mt-0.5 truncate">
+          @{user.username}
+          {isMe && <span className="text-[10px] ml-1" style={{ color: m.border }}>(you)</span>}
+        </p>
+        {user.full_name && <p className="text-white/40 text-xs mt-0.5 truncate">{user.full_name}</p>}
+        <div className="flex items-center justify-center gap-1.5 mt-3">
+          <BarbellIcon size={15} style={{ color: m.border }} />
+          <span className="font-head font-black text-xl tabular-nums" style={{ color: m.border }}>
+            {user.totalBravo.toLocaleString()}
+          </span>
+          <span className="text-white/30 text-xs font-head">bravas</span>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+/* ── #2 / #3 ── */
+function PodiumTwo({ user, rank, isMe }: { user: LeaderEntry; rank: 1 | 2; isMe: boolean }) {
+  const m = MEDAL[rank]
+  return (
+    <Link href={`/profile/${user.username}`}
+      className="flex flex-col items-center gap-2.5 flex-1 max-w-[180px]">
+
       {/* Avatar */}
-      <div className={`${isFirst ? 'w-[68px] h-[68px]' : 'w-14 h-14'} rounded-full overflow-hidden flex-shrink-0`}
-        style={{ border: `2.5px solid ${s.border}`, boxShadow: s.glow }}>
+      <div className="w-16 h-16 rounded-full overflow-hidden"
+        style={{
+          border: `2.5px solid ${m.border}`,
+          boxShadow: `0 0 20px ${m.glow}`,
+        }}>
         {user.avatar_url
-          ? <Image src={user.avatar_url} alt={user.username} width={isFirst ? 68 : 56} height={isFirst ? 68 : 56} className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center font-head font-bold text-white bg-red-p">{user.username.charAt(0).toUpperCase()}</div>}
+          ? <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center font-head font-black text-xl text-white"
+              style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+              {user.username[0].toUpperCase()}
+            </div>}
       </div>
-      {/* Name + score */}
-      <div className="text-center">
-        <p className="font-head font-bold text-white text-xs truncate w-full">@{user.username}</p>
-        <p className="font-head font-black text-sm mt-0.5" style={{ color: s.numColor }}>{user.totalBravo.toLocaleString()}</p>
-      </div>
-      {/* Podium block */}
-      <div className="w-full rounded-t-xl flex items-center justify-center"
-        style={{ height, background: `rgba(255,255,255,.04)`, border: `1px solid ${s.border}30`, borderBottom: 'none' }}>
-        <span className="font-head font-bold text-xs" style={{ color: s.numColor }}>{labels[rank]}</span>
+
+      {/* Info card */}
+      <div className="w-full rounded-2xl px-3 py-3 text-center"
+        style={{ background: m.bg, border: `1px solid ${m.border}25` }}>
+        <p className="font-head font-black text-sm" style={{ color: m.border }}>{m.label}</p>
+        <p className="font-head font-bold text-white text-sm mt-0.5 truncate">
+          @{user.username}
+          {isMe && <span className="text-[10px] ml-0.5" style={{ color: m.border }}> (you)</span>}
+        </p>
+        <div className="flex items-center justify-center gap-1 mt-2">
+          <BarbellIcon size={12} style={{ color: m.border }} />
+          <span className="font-head font-black text-base tabular-nums" style={{ color: m.border }}>
+            {user.totalBravo.toLocaleString()}
+          </span>
+        </div>
       </div>
     </Link>
   )

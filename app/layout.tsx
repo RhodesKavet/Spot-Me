@@ -26,9 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body className="font-body bg-bg-1 text-txt-1 antialiased">
-        <div className="mx-auto max-w-[480px] relative min-h-svh bg-bg-1 shadow-2xl">
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   )
