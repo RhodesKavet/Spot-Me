@@ -76,10 +76,10 @@ export default function AuthPage() {
       {/* Background: low-opacity gym photos */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {/* Fitness photo collage */}
-        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=60"
-          alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.07]" />
-        {/* Dark overlay so photo doesn't compete */}
-        <div className="absolute inset-0 bg-gradient-to-b from-bg-1/60 via-bg-1/40 to-bg-1/80" />
+        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=70"
+          alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+        {/* Dark overlay — photo shows through but text remains readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
         {/* Red glow blobs */}
         <div className="absolute -top-32 -left-16 w-80 h-80 rounded-full bg-red-p/12 blur-3xl animate-pulse" style={{ animationDuration: '5s' }} />
         <div className="absolute -bottom-32 -right-16 w-80 h-80 rounded-full bg-red-p/10 blur-3xl animate-pulse" style={{ animationDuration: '7s', animationDelay: '2s' }} />

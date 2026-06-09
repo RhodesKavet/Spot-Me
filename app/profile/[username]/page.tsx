@@ -172,9 +172,10 @@ export default function UserProfilePage() {
       {/* Hero */}
       <div className="relative px-4 pt-8 pb-4">
         {/* Gym photo banner */}
-        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=60"
-          alt="" className="absolute top-0 left-0 right-0 h-44 w-full object-cover opacity-[0.12] pointer-events-none" />
-        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-red-p/20 via-transparent to-bg-1 pointer-events-none" />
+        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=70"
+          alt="" className="absolute top-0 left-0 right-0 h-48 w-full object-cover opacity-30 pointer-events-none" style={{ objectPosition: 'center 30%' }} />
+        <div className="absolute top-0 left-0 right-0 h-48 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,.35) 0%, rgba(17,17,17,.95) 100%)' }} />
 
         <div className="relative flex items-end gap-4 mb-5">
           {/* Avatar */}
@@ -254,21 +255,21 @@ export default function UserProfilePage() {
           <p className="text-txt-2 text-sm mb-4 leading-relaxed">{profile.bio}</p>
         ) : null}
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center py-3 glass rounded-xl border border-bdr-1">
-            <p className="font-head font-bold text-lg text-txt-1">{posts.length}</p>
-            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Posts</p>
+        {/* Stats — PulseFit-style big impact numbers */}
+        <div className="flex border-t border-b border-white/5 -mx-4 px-4 py-4 gap-0">
+          <div className="flex-1 text-center border-r border-white/5">
+            <p className="font-head font-black text-4xl leading-none text-red-b">{posts.length}</p>
+            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Posts</p>
           </div>
           <button onClick={() => { setSpottersModal('spotters'); loadSpotters() }}
-            className="text-center py-3 glass rounded-xl border border-bdr-1 active:scale-95 transition-transform">
-            <p className="font-head font-bold text-lg text-txt-1">{followerCount}</p>
-            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Spotters</p>
+            className="flex-1 text-center border-r border-white/5 active:scale-95 transition-transform">
+            <p className="font-head font-black text-4xl leading-none text-red-b">{followerCount}</p>
+            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Spotters</p>
           </button>
           <button onClick={() => { setSpottersModal('spotting'); loadSpotting() }}
-            className="text-center py-3 glass rounded-xl border border-bdr-1 active:scale-95 transition-transform">
-            <p className="font-head font-bold text-lg text-txt-1">{followingCount}</p>
-            <p className="text-txt-3 text-[11px] uppercase tracking-wider">Spotting</p>
+            className="flex-1 text-center active:scale-95 transition-transform">
+            <p className="font-head font-black text-4xl leading-none text-red-b">{followingCount}</p>
+            <p className="text-white/35 text-[10px] font-head font-bold uppercase tracking-widest mt-1.5">Spotting</p>
           </button>
         </div>
       </div>
