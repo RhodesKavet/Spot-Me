@@ -48,30 +48,35 @@ VALUES ('posts', 'posts', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow authenticated users to upload to their own folder
-CREATE POLICY IF NOT EXISTS "Users can upload avatars"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  CREATE POLICY "Users can upload avatars"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY IF NOT EXISTS "Avatars are publicly viewable"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'avatars');
+DO $$ BEGIN
+  CREATE POLICY "Avatars are publicly viewable"
+  ON storage.objects FOR SELECT TO public
+  USING (bucket_id = 'avatars');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can update own avatar"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own avatar"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can upload post media"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'posts' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  CREATE POLICY "Users can upload post media"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'posts' AND auth.uid()::text = (storage.foldername(name))[1]);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY IF NOT EXISTS "Post media is publicly viewable"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'posts');
+DO $$ BEGIN
+  CREATE POLICY "Post media is publicly viewable"
+  ON storage.objects FOR SELECT TO public
+  USING (bucket_id = 'posts');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- =================================================================
 -- DONE — your SpotMe database is fully set up!
