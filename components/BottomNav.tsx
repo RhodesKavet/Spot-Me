@@ -2,14 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const NAV = [
-  { href: '/feed',        label: 'Feed',        icon: '▶' },
-  { href: '/map',         label: 'Map',         icon: '📍' },
-  { href: '__upload__',   label: 'Post',        icon: '+' },
-  { href: '/leaderboard', label: 'Board',       icon: '🏆' },
-  { href: '/profile',     label: 'Me',          icon: '👤' },
-]
+import { PlayIcon, MapPinIcon, PlusIcon, TrophyIcon, UserIcon } from '@/components/Icons'
 
 interface BottomNavProps {
   onUpload: () => void
@@ -18,38 +11,36 @@ interface BottomNavProps {
 export default function BottomNav({ onUpload }: BottomNavProps) {
   const pathname = usePathname()
 
+  const tabs = [
+    { href: '/feed',        label: 'Feed',   Icon: PlayIcon   },
+    { href: '/map',         label: 'Map',    Icon: MapPinIcon },
+    { href: '__upload__',   label: 'Post',   Icon: PlusIcon   },
+    { href: '/leaderboard', label: 'Board',  Icon: TrophyIcon },
+    { href: '/profile',     label: 'Me',     Icon: UserIcon   },
+  ]
+
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-30 bg-bg-2/95 backdrop-blur-sm border-t border-bdr-1">
-      <div className="flex items-center justify-around h-16 px-2">
-        {NAV.map(({ href, label, icon }) => {
-          if (href === '__upload__') {
-            return (
-              <button
-                key="upload"
-                onClick={onUpload}
-                className="flex flex-col items-center gap-0.5 px-3"
-                aria-label="Create post"
-              >
-                <div className="w-11 h-11 rounded-full bg-red-p flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-red-p/30 active:scale-95 transition-transform">
-                  +
-                </div>
-              </button>
-            )
-          }
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-30"
+      style={{ background: 'rgba(6,6,6,.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+      <div className="flex items-center justify-around h-16 px-1">
+        {tabs.map(({ href, label, Icon }) => {
+          if (href === '__upload__') return (
+            <button key="upload" onClick={onUpload} className="flex flex-col items-center gap-0.5 px-2" aria-label="Post">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white"
+                style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)', boxShadow: '0 0 16px rgba(192,57,43,.5)' }}>
+                <Icon size={20} />
+              </div>
+            </button>
+          )
 
           const active = pathname === href || (href === '/profile' && pathname.startsWith('/profile'))
           return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${
-                active ? 'text-red-p' : 'text-txt-3 hover:text-txt-2'
-              }`}
-            >
-              <span className="text-xl leading-none">{icon}</span>
-              <span className={`text-[10px] font-head font-bold uppercase tracking-wide ${active ? 'text-red-p' : ''}`}>
-                {label}
-              </span>
+            <Link key={href} href={href}
+              className={`flex flex-col items-center gap-1 px-3 py-1.5 transition-colors rounded-xl ${
+                active ? 'text-red-b' : 'text-txt-3'
+              }`}>
+              <Icon size={22} filled={active} />
+              <span className="text-[9px] font-head font-bold uppercase tracking-wide">{label}</span>
             </Link>
           )
         })}

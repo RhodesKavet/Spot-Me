@@ -8,6 +8,7 @@ import FeedPost from '@/components/FeedPost'
 import UploadModal from '@/components/UploadModal'
 import BottomNav from '@/components/BottomNav'
 import Logo from '@/components/Logo'
+import { SearchIcon } from '@/components/Icons'
 
 export default function FeedPage() {
   const [posts, setPosts]           = useState<Post[]>([])
@@ -73,11 +74,14 @@ export default function FeedPage() {
         )}
       </div>
 
-      {/* Top logo bar (visible above first post) */}
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4 pt-3 z-20 flex justify-center">
-        <div className="bg-bg-1/80 backdrop-blur-sm rounded-2xl px-4 py-2">
-          <Logo size="sm" />
-        </div>
+      {/* Top bar */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4 pt-3 pb-2 z-20 flex items-center justify-between"
+        style={{ background: 'linear-gradient(to bottom, rgba(6,6,6,.85) 0%, transparent 100%)', backdropFilter: 'blur(4px)' }}>
+        <div className="w-8" />
+        <Logo size="sm" />
+        <button className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+          <SearchIcon size={20} />
+        </button>
       </div>
 
       {showUpload && (

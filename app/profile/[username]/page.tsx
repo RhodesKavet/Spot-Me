@@ -9,6 +9,7 @@ import { Profile, Post } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
 import UploadModal from '@/components/UploadModal'
 import Logo from '@/components/Logo'
+import { GridIcon, BookmarkIcon, BarbellIcon, ArrowLeftIcon, CameraIcon, SignOutIcon } from '@/components/Icons'
 
 type Tab = 'posts' | 'saved' | 'liked'
 
@@ -156,18 +157,16 @@ export default function UserProfilePage() {
     <div className="min-h-svh bg-bg-1 pb-20">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 glass sticky top-0 z-20">
-        <button onClick={() => router.back()} className="text-txt-2 p-1">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
+        <button onClick={() => router.back()} className="text-txt-2 p-1 w-9 h-9 flex items-center justify-center">
+          <ArrowLeftIcon size={22} />
         </button>
         <Logo size="sm" />
         {isOwn ? (
           <button onClick={() => supabase.auth.signOut().then(() => router.replace('/auth'))}
-            className="text-xs font-head font-bold text-txt-3 hover:text-red-b transition-colors uppercase tracking-wider">
-            Sign Out
+            className="text-txt-3 hover:text-red-b transition-colors w-9 h-9 flex items-center justify-center">
+            <SignOutIcon size={20} />
           </button>
-        ) : <div className="w-12" />}
+        ) : <div className="w-9" />}
       </div>
 
       {/* Hero */}
@@ -189,8 +188,10 @@ export default function UserProfilePage() {
             </div>
             {isOwn && (
               <button onClick={() => avatarRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-red-p flex items-center justify-center text-xs border-2 border-bg-1">
-                {uploading ? '⏳' : '📷'}
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-red-p flex items-center justify-center border-2 border-bg-1 text-white">
+                {uploading
+                  ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>
+                  : <CameraIcon size={13} />}
               </button>
             )}
           </div>
@@ -269,17 +270,23 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — icon-only with distinct accent colors */}
       <div className="flex border-b border-bdr-1 sticky top-[57px] bg-bg-1 z-10">
-        {(['posts', 'saved', 'liked'] as Tab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-xs font-head font-bold uppercase tracking-wider transition-colors relative ${
-              tab === t ? 'text-red-b' : 'text-txt-3'
-            }`}>
-            {t === 'posts' ? '▦ Posts' : t === 'saved' ? '🔖 Saved' : '🏋️ Liked'}
-            {tab === t && <span className="tab-active-indicator" />}
-          </button>
-        ))}
+        {/* Posts — red */}
+        <button onClick={() => setTab('posts')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'posts' ? 'tab-red' : 'text-txt-3'}`}>
+          <GridIcon size={22} filled={tab === 'posts'} />
+          {tab === 'posts' && <span className="tab-active-indicator tab-active-red" />}
+        </button>
+        {/* Saved — blue */}
+        <button onClick={() => setTab('saved')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'saved' ? 'tab-blue' : 'text-txt-3'}`}>
+          <BookmarkIcon size={22} filled={tab === 'saved'} />
+          {tab === 'saved' && <span className="tab-active-indicator tab-active-blue" />}
+        </button>
+        {/* Liked — gold */}
+        <button onClick={() => setTab('liked')} className={`flex-1 py-3.5 flex flex-col items-center gap-1 transition-colors relative ${tab === 'liked' ? 'tab-gold' : 'text-txt-3'}`}>
+          <BarbellIcon size={22} filled={tab === 'liked'} />
+          {tab === 'liked' && <span className="tab-active-indicator tab-active-gold" />}
+        </button>
       </div>
 
       {/* Grid */}

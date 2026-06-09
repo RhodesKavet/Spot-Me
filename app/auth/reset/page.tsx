@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Logo from '@/components/Logo'
+import { EyeIcon, EyeOffIcon } from '@/components/Icons'
 
 export default function ResetPasswordPage() {
   const [password, setPassword]     = useState('')
@@ -61,7 +62,7 @@ export default function ResetPasswordPage() {
               value={password} onChange={e => setPassword(e.target.value)} className="input-dark pr-12" />
             <button type="button" onClick={() => setShowPass(s => !s)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-3 hover:text-txt-2">
-              {showPass ? '🙈' : '👁️'}
+              {showPass ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
             </button>
           </div>
           <input type="password" placeholder="Confirm password"

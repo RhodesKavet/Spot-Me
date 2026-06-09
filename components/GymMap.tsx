@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Gym, Profile } from '@/lib/types'
+import { SearchIcon } from '@/components/Icons'
 
 // @ts-expect-error leaflet private
 delete L.Icon.Default.prototype._getIconUrl
@@ -16,12 +18,19 @@ L.Icon.Default.mergeOptions({
 })
 
 const gymIcon = L.divIcon({
-  html: '<div class="gym-marker-div" style="font-size:26px;line-height:1;text-align:center">🏋️</div>',
-  iconSize: [32, 32], iconAnchor: [16, 28], popupAnchor: [0, -30], className: '',
+  html: `<div style="
+    width:34px;height:34px;background:linear-gradient(135deg,#c0392b,#e8453c);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:17px;box-shadow:0 2px 12px rgba(192,57,43,.7),0 0 0 2px rgba(255,255,255,.2);
+    cursor:pointer;line-height:1;">💪</div>`,
+  iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -36], className: '',
 })
 const userIcon = L.divIcon({
-  html: '<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2.5px solid #fff;box-shadow:0 0 8px rgba(59,130,246,.7)"></div>',
-  iconSize: [14, 14], iconAnchor: [7, 7], className: '',
+  html: `<div style="
+    width:16px;height:16px;border-radius:50%;background:#3b82f6;
+    border:2.5px solid #fff;box-shadow:0 0 0 3px rgba(59,130,246,.3),0 0 12px rgba(59,130,246,.6)">
+  </div>`,
+  iconSize: [16, 16], iconAnchor: [8, 8], className: '',
 })
 
 interface OverpassGym { id: number; lat: number; lon: number; tags: Record<string, string> }
@@ -31,23 +40,117 @@ interface Props {
   userGymId?: number | null
 }
 
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap()
-  useEffect(() => { map.setView([lat, lng], map.getZoom(), { animate: true }) }, [lat, lng, map])
+async function overpassQuery(query: string): Promise<OverpassGym[]> {
+  const res = await fetch('/api/gyms', {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(query),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return (data.elements || [])
+    .filter((el: any) => (el.lat || el.center?.lat) && el.tags?.name)
+    .map((el: any) => ({ id: el.id, lat: el.lat ?? el.center.lat, lon: el.lon ?? el.center.lon, tags: el.tags || {} }))
+}
+
+// Sub-component: listens to map move events
+function ViewportLoader({ onBoundsChange }: { onBoundsChange: (b: L.LatLngBounds, z: number) => void }) {
+  const map = useMapEvents({
+    moveend: () => onBoundsChange(map.getBounds(), map.getZoom()),
+    zoomend: () => onBoundsChange(map.getBounds(), map.getZoom()),
+  })
   return null
 }
 
+// Sub-component: gym popup content with member fetch
+function GymPopupContent({ gym, currentUserId, isMember, onToggle }:
+  { gym: Gym; currentUserId?: string; isMember: boolean; onToggle: (g: Gym) => void }) {
+  const [members, setMembers] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('gym_members').select('profiles(*)').eq('gym_id', gym.id).limit(5)
+      .then(({ data }) => {
+        setMembers(((data || []) as any[]).map(r => r.profiles).filter(Boolean))
+        setLoading(false)
+      })
+  }, [gym.id])
+
+  return (
+    <div className="p-4 min-w-[210px]">
+      <p className="font-head font-bold text-txt-1 text-sm mb-0.5 pr-4">{gym.name}</p>
+      {gym.address && <p className="text-txt-3 text-xs mb-3">{gym.address}</p>}
+
+      {/* Members */}
+      <div className="flex items-center gap-2 mb-3">
+        {loading ? (
+          <div className="shimmer h-4 w-28 rounded-full" />
+        ) : members.length > 0 ? (
+          <>
+            <div className="flex -space-x-2">
+              {members.slice(0, 5).map(m => (
+                <div key={m.id} className="w-7 h-7 rounded-full border-2 border-bg-2 overflow-hidden bg-bg-4 flex-shrink-0">
+                  {m.avatar_url
+                    ? <Image src={m.avatar_url} alt={m.username} width={28} height={28} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-white bg-red-p">{m.username.charAt(0).toUpperCase()}</div>
+                  }
+                </div>
+              ))}
+            </div>
+            <span className="text-txt-3 text-xs">{members.length} member{members.length !== 1 ? 's' : ''}</span>
+          </>
+        ) : (
+          <span className="text-txt-3 text-xs">Be the first to join!</span>
+        )}
+      </div>
+
+      {currentUserId && (
+        <button onClick={() => onToggle(gym)}
+          className={`w-full py-2.5 rounded-xl text-xs font-head font-bold uppercase tracking-wider transition-all ${
+            isMember
+              ? 'border border-red-p/50 text-red-b bg-red-p/10'
+              : 'text-white'
+          }`}
+          style={!isMember ? { background: 'linear-gradient(135deg,#c0392b,#e8453c)' } : undefined}>
+          {isMember ? 'Leave Gym' : 'Join Gym'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function OverpassPopupContent({ og, currentUserId, onJoin }:
+  { og: OverpassGym; currentUserId?: string; onJoin: (og: OverpassGym) => void }) {
+  return (
+    <div className="p-4 min-w-[210px]">
+      <p className="font-head font-bold text-txt-1 text-sm mb-0.5 pr-4">{og.tags.name}</p>
+      {(og.tags['addr:street'] || og.tags['addr:city']) && (
+        <p className="text-txt-3 text-xs mb-1">{[og.tags['addr:street'], og.tags['addr:city']].filter(Boolean).join(', ')}</p>
+      )}
+      {og.tags['opening_hours'] && <p className="text-txt-3 text-xs mb-3">🕐 {og.tags['opening_hours']}</p>}
+      <div className="mb-3" />
+      {currentUserId && (
+        <button onClick={() => onJoin(og)}
+          className="w-full py-2.5 rounded-xl text-xs font-head font-bold uppercase tracking-wider text-white"
+          style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+          Join Gym
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function GymMap({ currentUserId, userGymId }: Props) {
-  const [dbGyms, setDbGyms]             = useState<Gym[]>([])
-  const [overpassGyms, setOverpassGyms] = useState<OverpassGym[]>([])
-  const [memberships, setMemberships]   = useState<Set<number>>(new Set())
-  const [userLoc, setUserLoc]           = useState<[number, number] | null>(null)
-  const [center, setCenter]             = useState<[number, number]>([20, 0])
-  const [zoom, setZoom]                 = useState(2)
-  const [searchText, setSearchText]     = useState('')
-  const [searching, setSearching]       = useState(false)
-  const [searchError, setSearchError]   = useState('')
-  const [resultMsg, setResultMsg]       = useState('')
+  const [dbGyms, setDbGyms]           = useState<Gym[]>([])
+  const [viewportGyms, setViewportGyms] = useState<OverpassGym[]>([])
+  const [memberships, setMemberships] = useState<Set<number>>(new Set())
+  const [userLoc, setUserLoc]         = useState<[number, number] | null>(null)
+  const [center, setCenter]           = useState<[number, number]>([20, 0])
+  const [zoom, setZoom]               = useState(2)
+  const [searchText, setSearchText]   = useState('')
+  const [searching, setSearching]     = useState(false)
+  const [searchMsg, setSearchMsg]     = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     supabase.from('gyms').select('*').then(({ data }) => setDbGyms((data as Gym[]) || []))
@@ -58,53 +161,48 @@ export default function GymMap({ currentUserId, userGymId }: Props) {
     navigator.geolocation?.getCurrentPosition(pos => {
       const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude]
       setUserLoc(loc); setCenter(loc); setZoom(13)
+      // Auto-load gyms around user location
+      loadViewportGyms(pos.coords.latitude - 0.05, pos.coords.longitude - 0.05,
+        pos.coords.latitude + 0.05, pos.coords.longitude + 0.05, 13)
     }, undefined, { enableHighAccuracy: true, timeout: 8000 })
   }, [currentUserId])
 
+  const loadViewportGyms = useCallback(async (s: number, w: number, n: number, e: number, z: number) => {
+    if (z < 11) return // don't query when zoomed very far out
+    const q = `[out:json][timeout:20];(node["leisure"="fitness_centre"](${s},${w},${n},${e});way["leisure"="fitness_centre"](${s},${w},${n},${e});node["amenity"="gym"](${s},${w},${n},${e});way["amenity"="gym"](${s},${w},${n},${e}););out center;`
+    const gyms = await overpassQuery(q)
+    setViewportGyms(gyms)
+  }, [])
+
+  const handleBoundsChange = useCallback((bounds: L.LatLngBounds, z: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      loadViewportGyms(bounds.getSouth(), bounds.getWest(), bounds.getNorth(), bounds.getEast(), z)
+    }, 800)
+  }, [loadViewportGyms])
+
   const searchGyms = async () => {
-    const q = searchText.trim()
-    if (!q) return
-    setSearching(true); setSearchError(''); setResultMsg(''); setOverpassGyms([])
+    if (!searchText.trim()) return
+    setSearching(true); setSearchMsg('')
 
     try {
-      // Geocode with Nominatim
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'SpotMe-App/1.0 kavetr22@campbellhall.org' } }
-      )
+      const geoRes = await fetch(`/api/geocode?q=${encodeURIComponent(searchText.trim())}`)
       const geoData = await geoRes.json()
-      if (!geoData.length) { setSearchError('Location not found. Try a different city or address.'); return }
+      if (!geoData.length) { setSearchMsg('Location not found.'); return }
 
       const { lat, lon, display_name } = geoData[0]
       const clat = parseFloat(lat), clon = parseFloat(lon)
-      const radius = 5000
+      const r = 5000
 
-      // Overpass API query for fitness centers
-      const oq = `[out:json][timeout:25];(node["leisure"="fitness_centre"](around:${radius},${clat},${clon});way["leisure"="fitness_centre"](around:${radius},${clat},${clon});node["amenity"="gym"](around:${radius},${clat},${clon});way["amenity"="gym"](around:${radius},${clat},${clon});node["sport"="fitness"](around:${radius},${clat},${clon}););out center;`
-      const opRes = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: 'data=' + encodeURIComponent(oq),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      })
-      const opData = await opRes.json()
+      const q = `[out:json][timeout:25];(node["leisure"="fitness_centre"](around:${r},${clat},${clon});way["leisure"="fitness_centre"](around:${r},${clat},${clon});node["amenity"="gym"](around:${r},${clat},${clon});way["amenity"="gym"](around:${r},${clat},${clon});node["sport"="fitness"](around:${r},${clat},${clon}););out center;`
+      const gyms = await overpassQuery(q)
 
-      const gyms: OverpassGym[] = (opData.elements || [])
-        .filter((el: any) => (el.lat || el.center?.lat) && el.tags?.name)
-        .map((el: any) => ({
-          id: el.id,
-          lat: el.lat || el.center.lat,
-          lon: el.lon || el.center.lon,
-          tags: el.tags || {},
-        }))
-
-      setOverpassGyms(gyms)
+      setViewportGyms(gyms)
       setCenter([clat, clon]); setZoom(14)
-
       const city = display_name.split(',')[0]
-      if (gyms.length === 0) setSearchError(`No gyms found near "${city}".`)
-      else setResultMsg(`${gyms.length} gym${gyms.length > 1 ? 's' : ''} near ${city}`)
+      setSearchMsg(gyms.length ? `${gyms.length} gyms near ${city}` : `No gyms found near ${city}`)
     } catch {
-      setSearchError('Search failed — check your connection and try again.')
+      setSearchMsg('Search failed — try again.')
     } finally {
       setSearching(false)
     }
@@ -122,107 +220,91 @@ export default function GymMap({ currentUserId, userGymId }: Props) {
     }
   }
 
-  // Upsert an Overpass gym into DB then join it
-  const claimOverpassGym = async (og: OverpassGym) => {
+  const claimAndJoin = async (og: OverpassGym) => {
     if (!currentUserId) return
     const name    = og.tags.name
-    const address = [og.tags['addr:street'], og.tags['addr:city']].filter(Boolean).join(', ')
-    // Check if it already exists (rough name match)
+    const address = [og.tags['addr:street'], og.tags['addr:city']].filter(Boolean).join(', ') || null
     let { data: existing } = await supabase.from('gyms').select('*').ilike('name', name).limit(1).maybeSingle()
     if (!existing) {
-      const { data: created } = await supabase.from('gyms')
-        .insert({ name, address: address || null, lat: og.lat, lng: og.lon })
-        .select().single()
-      existing = created
+      const { data } = await supabase.from('gyms').insert({ name, address, lat: og.lat, lng: og.lon }).select().single()
+      existing = data
     }
-    if (existing) toggleMembership(existing as Gym)
+    if (existing) {
+      setDbGyms(prev => prev.find(g => g.id === existing!.id) ? prev : [...prev, existing!])
+      toggleMembership(existing as Gym)
+    }
   }
 
   return (
     <div className="relative h-svh pb-16 flex flex-col">
-      {/* Search bar */}
-      <div className="px-3 py-2 glass border-b border-bdr-1 z-[1001] flex-shrink-0">
+      {/* Search */}
+      <div className="px-3 pt-3 pb-2 z-[1001] flex-shrink-0"
+        style={{ background: 'rgba(6,6,6,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
         <div className="flex gap-2">
-          <input type="text" placeholder="Search city or gym…"
-            value={searchText} onChange={e => setSearchText(e.target.value)}
+          <input type="text" placeholder="Search city or gym…" value={searchText}
+            onChange={e => setSearchText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && searchGyms()}
             className="input-dark py-2.5 text-sm flex-1" />
           <button onClick={searchGyms} disabled={searching}
-            className="px-4 rounded-xl bg-gradient-to-r from-red-p to-red-b text-white font-head font-bold text-sm disabled:opacity-50 flex-shrink-0">
-            {searching ? '⏳' : '🔍'}
+            className="w-12 h-[46px] rounded-xl flex items-center justify-center flex-shrink-0 text-white disabled:opacity-40 transition-opacity"
+            style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)' }}>
+            {searching
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <SearchIcon size={18} />}
           </button>
         </div>
-        {searchError  && <p className="text-red-b text-xs mt-1.5 px-1">{searchError}</p>}
-        {resultMsg    && <p className="text-txt-3 text-xs mt-1.5 px-1">{resultMsg} — tap a pin to join</p>}
+        {searchMsg && <p className={`text-xs mt-1.5 px-1 ${searchMsg.startsWith('No') || searchMsg.includes('failed') ? 'text-red-b/70' : 'text-txt-3'}`}>{searchMsg}</p>}
       </div>
 
       {/* Map */}
       <div className="flex-1 relative">
-        <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}
-          className="z-0" zoomControl>
-          <RecenterMap lat={center[0]} lng={center[1]} />
+        <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%', background: '#0d1117' }}
+          zoomControl>
+          <ViewportLoader onBoundsChange={handleBoundsChange} />
+
+          {/* Satellite imagery base */}
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='© <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-            maxZoom={19}
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            attribution='Tiles &copy; Esri &mdash; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, IGN, IGP, UPR-EGP'
+            maxZoom={17}
+          />
+          {/* Dark labels overlay */}
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://carto.com">CARTO</a>'
+            maxZoom={17}
           />
 
-          {userLoc && <Marker position={userLoc} icon={userIcon}><Popup>📍 You are here</Popup></Marker>}
+          {userLoc && <Marker position={userLoc} icon={userIcon}><Popup><p className="px-3 py-2 text-sm font-head font-bold text-txt-2">📍 You are here</p></Popup></Marker>}
 
           {/* DB gyms */}
           {dbGyms.filter(g => g.lat && g.lng).map(gym => (
             <Marker key={`db-${gym.id}`} position={[gym.lat!, gym.lng!]} icon={gymIcon}>
               <Popup>
-                <div className="p-3 min-w-[180px]">
-                  <p className="font-head font-bold text-txt-1 text-sm mb-0.5">{gym.name}</p>
-                  {gym.address && <p className="text-txt-3 text-xs mb-3">{gym.address}</p>}
-                  {userGymId === gym.id && <p className="text-red-b text-xs mb-2 font-head font-bold">⭐ My Gym</p>}
-                  {currentUserId && (
-                    <button onClick={() => toggleMembership(gym)}
-                      className={`w-full py-2 rounded-xl text-xs font-head font-bold uppercase tracking-wider transition-all ${
-                        memberships.has(gym.id)
-                          ? 'bg-red-p/20 border border-red-p/40 text-red-b'
-                          : 'bg-gradient-to-r from-red-p to-red-b text-white'
-                      }`}>
-                      {memberships.has(gym.id) ? 'Leave Gym' : 'Join Gym'}
-                    </button>
-                  )}
-                </div>
+                <GymPopupContent gym={gym} currentUserId={currentUserId}
+                  isMember={memberships.has(gym.id)} onToggle={toggleMembership} />
               </Popup>
             </Marker>
           ))}
 
-          {/* Overpass results */}
-          {overpassGyms.map(og => (
-            <Marker key={`op-${og.id}`} position={[og.lat, og.lon]} icon={gymIcon}>
-              <Popup>
-                <div className="p-3 min-w-[180px]">
-                  <p className="font-head font-bold text-txt-1 text-sm mb-0.5">{og.tags.name}</p>
-                  {(og.tags['addr:street'] || og.tags['addr:city']) && (
-                    <p className="text-txt-3 text-xs mb-1">
-                      {[og.tags['addr:street'], og.tags['addr:city']].filter(Boolean).join(', ')}
-                    </p>
-                  )}
-                  {og.tags['opening_hours'] && (
-                    <p className="text-txt-3 text-xs mb-2">🕐 {og.tags['opening_hours']}</p>
-                  )}
-                  {currentUserId && (
-                    <button onClick={() => claimOverpassGym(og)}
-                      className="w-full py-2 rounded-xl text-xs font-head font-bold uppercase tracking-wider bg-gradient-to-r from-red-p to-red-b text-white">
-                      Join Gym
-                    </button>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {/* Viewport / search Overpass gyms */}
+          {viewportGyms
+            .filter(og => !dbGyms.some(g => g.name.toLowerCase() === og.tags.name?.toLowerCase()))
+            .map(og => (
+              <Marker key={`op-${og.id}`} position={[og.lat, og.lon]} icon={gymIcon}>
+                <Popup>
+                  <OverpassPopupContent og={og} currentUserId={currentUserId} onJoin={claimAndJoin} />
+                </Popup>
+              </Marker>
+            ))}
         </MapContainer>
 
         {/* Locate me */}
         {userLoc && (
-          <button onClick={() => setCenter([...userLoc])}
-            className="absolute bottom-4 right-3 z-[1000] glass border border-bdr-1 rounded-full w-11 h-11 flex items-center justify-center text-xl shadow-xl">
-            📍
+          <button onClick={() => setCenter([...userLoc as [number, number]])}
+            className="absolute bottom-4 right-3 z-[1000] w-11 h-11 rounded-full flex items-center justify-center text-white shadow-xl"
+            style={{ background: 'rgba(6,6,6,.85)', border: '1px solid rgba(255,255,255,.1)', backdropFilter: 'blur(12px)' }}>
+            <span style={{ fontSize: 20 }}>📍</span>
           </button>
         )}
       </div>

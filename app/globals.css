@@ -209,3 +209,24 @@
 .btn-primary:hover  { filter: brightness(1.1); }
 .btn-primary:active { transform: scale(.97); }
 .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Barbell curl animation ── */
+@keyframes barbell-curl {
+  0%   { transform: rotate(0deg)   scale(1); }
+  30%  { transform: rotate(-38deg) scale(1.25); }
+  60%  { transform: rotate(-28deg) scale(1.18); }
+  80%  { transform: rotate(-5deg)  scale(1.05); }
+  100% { transform: rotate(0deg)   scale(1); }
+}
+.barbell-curl {
+  animation: barbell-curl 0.55s cubic-bezier(.22,1,.36,1);
+  transform-origin: center center;
+}
+
+/* ── Profile tab accent colors ── */
+.tab-red  { color: #e8453c; }
+.tab-blue { color: #3b82f6; }
+.tab-gold { color: #f5a623; }
+.tab-active-red  { background: linear-gradient(90deg, #c0392b, #e8453c); }
+.tab-active-blue { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+.tab-active-gold { background: linear-gradient(90deg, #b7791f, #f5a623); }
