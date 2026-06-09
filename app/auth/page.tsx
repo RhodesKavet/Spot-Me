@@ -73,14 +73,19 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-svh bg-bg-1 flex flex-col items-center justify-center p-5 relative overflow-hidden">
-      {/* Animated background */}
+      {/* Background: low-opacity gym photos */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-20 w-96 h-96 rounded-full bg-red-p/8 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute -bottom-40 -right-20 w-96 h-96 rounded-full bg-red-p/6 blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-red-p/4 blur-3xl" />
-        {/* Grid overlay */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ backgroundImage: 'linear-gradient(rgba(192,57,43,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(192,57,43,.5) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Fitness photo collage */}
+        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=60"
+          alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.07]" />
+        {/* Dark overlay so photo doesn't compete */}
+        <div className="absolute inset-0 bg-gradient-to-b from-bg-1/60 via-bg-1/40 to-bg-1/80" />
+        {/* Red glow blobs */}
+        <div className="absolute -top-32 -left-16 w-80 h-80 rounded-full bg-red-p/12 blur-3xl animate-pulse" style={{ animationDuration: '5s' }} />
+        <div className="absolute -bottom-32 -right-16 w-80 h-80 rounded-full bg-red-p/10 blur-3xl animate-pulse" style={{ animationDuration: '7s', animationDelay: '2s' }} />
+        {/* Red grid */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(rgba(192,57,43,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(192,57,43,.6) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
       </div>
 
       {/* Logo */}

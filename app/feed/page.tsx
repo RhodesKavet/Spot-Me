@@ -58,18 +58,25 @@ export default function FeedPage() {
           ))
         ) : (
           /* Empty state */
-          <div className="snap-post flex flex-col items-center justify-center text-center px-8 pb-20 bg-bg-1">
-            <div className="text-7xl mb-5 animate-bounce">🏋️</div>
-            <h2 className="font-head font-bold text-2xl text-txt-1 mb-2 tracking-wide">No posts yet</h2>
-            <p className="text-txt-2 mb-8 text-sm leading-relaxed">
-              Be the first to drop a workout post.<br />Show the world your gains!
-            </p>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="bg-red-p hover:bg-red-b text-white font-head font-bold px-8 py-3.5 rounded-full text-base uppercase tracking-wide transition-all active:scale-95 shadow-lg shadow-red-p/30"
-            >
-              Post Your First Lift
-            </button>
+          <div className="snap-post flex flex-col items-center justify-center text-center px-8 pb-20 relative overflow-hidden bg-bg-1">
+            <img src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=60"
+              alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-bg-1/90 via-bg-1/50 to-bg-1/80 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5 mx-auto"
+                style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)', boxShadow: '0 0 32px rgba(192,57,43,.5)' }}>
+                <span className="text-4xl">💪</span>
+              </div>
+              <h2 className="font-head font-bold text-3xl text-white mb-2 tracking-wide">Be First.</h2>
+              <p className="text-white/50 mb-8 text-sm leading-relaxed">
+                Drop the first workout post.<br />Show the world your gains.
+              </p>
+              <button onClick={() => setShowUpload(true)}
+                className="font-head font-bold px-8 py-3.5 rounded-full text-base uppercase tracking-wide active:scale-95 text-white"
+                style={{ background: 'linear-gradient(135deg,#c0392b,#e8453c)', boxShadow: '0 0 24px rgba(192,57,43,.5)' }}>
+                Post Your First Lift
+              </button>
+            </div>
           </div>
         )}
       </div>

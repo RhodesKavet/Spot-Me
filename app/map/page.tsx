@@ -8,21 +8,20 @@ import { Profile } from '@/lib/types'
 import BottomNav from '@/components/BottomNav'
 import UploadModal from '@/components/UploadModal'
 
-const GymMap = dynamic(() => import('@/components/GymMap'), {
+const GlobeMap = dynamic(() => import('@/components/GlobeMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-svh flex items-center justify-center bg-bg-1">
+    <div className="h-svh flex items-center justify-center bg-[#060606]">
       <div className="flex flex-col items-center gap-3">
-        <span className="text-4xl">🗺️</span>
-        <div className="w-6 h-6 border-2 border-red-p border-t-transparent rounded-full animate-spin" />
-        <p className="text-txt-2 text-sm font-head">Loading map…</p>
+        <div className="w-7 h-7 border-2 border-red-p border-t-transparent rounded-full animate-spin" />
+        <p className="text-txt-3 text-sm font-head">Loading globe…</p>
       </div>
     </div>
   ),
 })
 
 export default function MapPage() {
-  const [profile, setProfile]     = useState<Profile | null>(null)
+  const [profile, setProfile]       = useState<Profile | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const router = useRouter()
 
@@ -35,17 +34,11 @@ export default function MapPage() {
   }, [router])
 
   return (
-    <div className="relative bg-bg-1">
-      <GymMap currentUserId={profile?.id} userGymId={profile?.gym_id} />
-
+    <div className="relative bg-[#060606] h-svh overflow-hidden">
+      <GlobeMap currentUserId={profile?.id} userGymId={profile?.gym_id} />
       {showUpload && (
-        <UploadModal
-          currentUser={profile}
-          onClose={() => setShowUpload(false)}
-          onPost={() => setShowUpload(false)}
-        />
+        <UploadModal currentUser={profile} onClose={() => setShowUpload(false)} onPost={() => setShowUpload(false)} />
       )}
-
       <BottomNav onUpload={() => setShowUpload(true)} />
     </div>
   )

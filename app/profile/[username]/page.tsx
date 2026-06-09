@@ -171,7 +171,10 @@ export default function UserProfilePage() {
 
       {/* Hero */}
       <div className="relative px-4 pt-8 pb-4">
-        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-red-p/25 to-transparent pointer-events-none" />
+        {/* Gym photo banner */}
+        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=60"
+          alt="" className="absolute top-0 left-0 right-0 h-44 w-full object-cover opacity-[0.12] pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-red-p/20 via-transparent to-bg-1 pointer-events-none" />
 
         <div className="relative flex items-end gap-4 mb-5">
           {/* Avatar */}
